@@ -1,0 +1,16 @@
+{
+  "name": "OUTILS DE GESTION CABINE",
+  "short_name": "GESTION CABINE",
+  "start_url": "index.html",
+  "display": "standalone",
+  "background_color": "#0d1117",
+  "theme_color": "#f0b90b",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/3105/3105035.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

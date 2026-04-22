@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OUTILS DE GESTION CABINE</title>
+    
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#f0b90b">
+    
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="mobile-web-app-capable" content="yes">
+    <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/3105/3105035.png">
+
+    <style>
+        :root {
+            --bg: #0d1117; --card: #161b22; --border: #30363d;
+            --text: #c9d1d9; --primary: #f0b90b; --blue: #58a6ff;
+            --green: #238636; --red: #da3633; --gray: #8b949e;
+        }
+        body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 10px; font-size: 0.8rem; }
+        .container { max-width: 1400px; margin: 0 auto; }
+        header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border-bottom: 1px solid var(--border); padding-bottom: 10px; }
+        .dash-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px; margin-bottom: 15px; }
+        @media (max-width: 1100px) { .dash-grid { grid-template-columns: 1fr; } }
+        .panel { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 12px; }
+        .panel.morning { border-top: 4px solid var(--blue); }
+        .panel.current { border-top: 4px solid var(--primary); }
+        .panel.inventory { border-top: 4px solid var(--green); }
+        .panel h2 { font-size: 0.65rem; margin: 0 0 10px 0; color: var(--gray); text-transform: uppercase; letter-spacing: 1px; }
+        .stat-card { background: rgba(0,0,0,0.2); padding: 8px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.05); margin-bottom: 8px; }
+        .stat-card label { display: block; font-size: 0.55rem; color: var(--gray); margin-bottom: 3px; border-bottom: 1px solid #30363d; padding-bottom: 2px; }
+        .val { font-family: 'Roboto Mono', monospace; font-weight: bold; font-size: 0.75rem; }
+        .summary-box { background: #1c2128; border: 1px dashed var(--gray); padding: 8px; border-radius: 6px; margin-top: 5px; }
+        .summary-row { display: flex; justify-content: space-between; font-size: 0.65rem; margin-bottom: 4px; border-bottom: 1px solid #30363d; padding-bottom: 2px; font-weight: bold; }
+        .res-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 3px; }
+        .net-box { padding: 4px; background: #0d1117; border-radius: 4px; text-align: center; font-weight: bold; border: 1px solid #21262d; font-size: 0.55rem; line-height: 1.2; }
+        .main-layout { display: grid; grid-template-columns: 380px 1fr; gap: 20px; }
+        @media (max-width: 1000px) { .main-layout { grid-template-columns: 1fr; } }
+        .input-box { background: #0d1117; border: 1px solid var(--border); color: white; padding: 8px; border-radius: 6px; width: 100%; box-sizing: border-box; margin-bottom: 6px; font-size: 0.8rem; }
+        .btn { border: none; padding: 10px; border-radius: 6px; font-weight: bold; cursor: pointer; width: 100%; transition: 0.2s; margin-bottom: 5px; }
+        .btn-blue { background: #58a6ff; color: white; }
+        .btn-green { background: #238636; color: white; }
+        .btn-gray { background: #30363d; color: white; }
+        .btn-red { background: #da3633; color: white; }
+        table { width: 100%; border-collapse: collapse; font-size: 0.75rem; }
+        th { text-align: left; padding: 10px; color: var(--gray); border-bottom: 1px solid var(--border); }
+        td { padding: 10px; border-bottom: 1px solid #21262d; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header>
+        <div style="font-weight: 900; font-size: 1.2rem; text-transform: uppercase;">GESTION <span style="color:var(--primary)">CABINE</span></div>
+        <div id="clock" style="font-family: monospace; color: var(--gray);">00:00:00</div>
+    </header>
+
+    <div class="dash-grid">
+        <div class="panel morning">
+            <h2>☀️ INITIAL MATIN</h2>
+            <div class="stat-card"><label>CASH MATIN</label><div id="m-cash" class="val">---</div></div>
+            <div class="stat-card"><label>MOMO TOTAL MATIN</label><div id="m-momo-total" class="val">---</div></div>
+            <div style="font-size: 0.55rem; color: var(--gray);">Units: <span id="m-units">---</span></div>
+        </div>
+
+        <div class="panel current">
+            <h2>📊 RÉSUMÉ DES VENTES</h2>
+            <div class="summary-box">
+                <div class="summary-row" style="color:var(--blue)">UNITÉS (TOTAL) <span id="g-total-units-cash">0 FC</span></div>
+                <div id="g-detail-units-cash" style="font-size: 0.52rem; color: var(--gray); padding-bottom: 5px;">A:0 | O:0 | Af:0 | V:0$</div>
+                <div class="summary-row" style="color:var(--green)">DÉPÔTS <span id="g-total-dep">0$ | 0F</span></div>
+                <div id="g-detail-dep" style="font-size: 0.52rem; color: var(--gray); padding-bottom: 5px;">A:0$|0F V:0$|0F O:0$|0F</div>
+                <div class="summary-row" style="color:var(--red)">RETRAITS <span id="g-total-ret">0$ | 0F</span></div>
+                <div id="g-detail-ret" style="font-size: 0.52rem; color: var(--gray);">A:0$|0F V:0$|0F O:0$|0F</div>
+            </div>
+            <div class="stat-card" style="margin-top:10px;"><label>CASH RÉEL EN CAISSE</label><div id="now-cash" class="val" style="color:var(--primary); font-size: 0.9rem;">---</div></div>
+        </div>
+
+        <div class="panel inventory">
+            <h2>📦 STOCK DISPO (VIRTUEL)</h2>
+            <div style="margin-bottom:8px">
+                <div class="res-grid" style="grid-template-columns: repeat(4, 1fr);">
+                    <div class="net-box"><div style="color:var(--blue)">AIR</div><span id="s-ua">0</span></div>
+                    <div class="net-box"><div style="color:var(--primary)">ORA</div><span id="s-uo">0</span></div>
+                    <div class="net-box"><div style="color:var(--text)">AFR</div><span id="s-uaf">0</span></div>
+                    <div class="net-box"><div style="color:var(--green)">VOD</div><span id="s-uv">0</span>$</div>
+                </div>
+            </div>
+            <label style="font-size:0.55rem; color:var(--gray)">SOLDE MOMO REEL</label>
+            <div class="res-grid">
+                <div class="net-box" id="s-air-momo"><div style="color:var(--blue)">AIRTEL</div>0$ / 0F</div>
+                <div class="net-box" id="s-vod-momo"><div style="color:var(--green)">VODA</div>0$ / 0F</div>
+                <div class="net-box" id="s-ora-momo"><div style="color:var(--primary)">ORANGE</div>0$ / 0F</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="main-layout">
+        <aside>
+            <div class="panel" style="margin-bottom:15px; border-left: 4px solid var(--blue);">
+                <h2>🚀 OUVERTURE SESSION</h2>
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:5px;"><input type="number" id="i-cash-usd" class="input-box" placeholder="Cash $"><input type="number" id="i-cash-cdf" class="input-box" placeholder="Cash FC"></div>
+                <div style="display:grid; grid-template-columns: repeat(4, 1fr); gap:4px;"><input type="number" id="i-ua" class="input-box" placeholder="U-A"><input type="number" id="i-uo" class="input-box" placeholder="U-O"><input type="number" id="i-uaf" class="input-box" placeholder="U-Af"><input type="number" id="i-uv" class="input-box" placeholder="U-V$"></div>
+                <div style="display:grid; grid-template-columns: 1fr 1.5fr; gap:5px;">
+                    <input type="number" id="i-ma-usd" class="input-box" placeholder="Airtel $"><input type="number" id="i-ma-cdf" class="input-box" placeholder="Airtel FC">
+                    <input type="number" id="i-mv-usd" class="input-box" placeholder="Voda $"><input type="number" id="i-mv-cdf" class="input-box" placeholder="Voda FC">
+                    <input type="number" id="i-mo-usd" class="input-box" placeholder="Orange $"><input type="number" id="i-mo-cdf" class="input-box" placeholder="Orange FC">
+                </div>
+                <button class="btn btn-blue" onclick="setDailyInit()">LANCER LA SESSION</button>
+            </div>
+
+            <div class="panel" style="margin-bottom:15px; border-left: 4px solid var(--green);">
+                <h2>➕ OPÉRATION</h2>
+                <select id="op-service" class="input-box" onchange="toggleSync()">
+                    <optgroup label="UNITÉS"><option value="U-Airtel">Unit Airtel</option><option value="U-Orange">Unit Orange</option><option value="U-Afri">Unit Africell</option><option value="U-Voda">Unit Vodacom $</option></optgroup>
+                    <optgroup label="MOBILE MONEY"><option value="M-AIR-D">Airtel Dépôt</option><option value="M-AIR-R">Airtel Retrait</option><option value="M-VOD-D">M-Pesa Dépôt</option><option value="M-VOD-R">M-Pesa Retrait</option></optgroup>
+                    <optgroup label="ORANGE MONEY"><option value="M-ORA-D">Orange Dépôt</option><option value="M-ORA-R">Orange Retrait</option></optgroup>
+                    <option value="CHANGE">Change Money</option>
+                </select>
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
+                    <input type="number" id="op-qty" step="0.01" class="input-box" placeholder="Montant Virtuel" oninput="autoCalc()">
+                    <input type="number" id="op-cash" class="input-box" placeholder="Argent Cash">
+                </div>
+                <select id="op-curr" class="input-box" onchange="autoCalc()"><option value="CDF">Francs (FC)</option><option value="USD">Dollars ($)</option></select>
+                <button class="btn btn-green" onclick="processOp()">VALIDER L'OPÉRATION</button>
+            </div>
+
+            <div class="panel">
+                <h2>📥 RAPPORTS DÉTAILLÉS</h2>
+                <button class="btn btn-gray" onclick="exportReport('JOURNALIER')">📄 RAPPORT JOUR</button>
+                <button class="btn btn-gray" onclick="exportReport('HEBDOMADAIRE')">📅 RAPPORT SEMAINE</button>
+                <button class="btn btn-gray" onclick="exportReport('MENSUEL')">📂 RAPPORT MOIS</button>
+                <button class="btn btn-red" style="font-size:0.6rem; margin-top:10px;" onclick="resetAll()">RÉINITIALISER TOUT</button>
+            </div>
+        </aside>
+
+        <section>
+            <div class="panel">
+                <h2>📜 HISTORIQUE RÉCENT</h2>
+                <div style="max-height: 550px; overflow-y: auto;">
+                    <table>
+                        <thead><tr><th>Heure</th><th>Service</th><th>Quantité</th><th>Cash</th><th></th></tr></thead>
+                        <tbody id="log-body"></tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+    </div>
+</div>
+
+<script>
+    // --- GESTION DES DONNÉES ---
+    let d = JSON.parse(localStorage.getItem('fkm_v11')) || { m: {}, logs: [] };
+
+    function save() { localStorage.setItem('fkm_v11', JSON.stringify(d)); render(); }
+
+    function setDailyInit() {
+        d.m = {
+            ts: new Date().toISOString(),
+            cUSD: parseFloat(document.getElementById('i-cash-usd').value||0), cCDF: parseFloat(document.getElementById('i-cash-cdf').value||0),
+            ua: parseFloat(document.getElementById('i-ua').value||0), uo: parseFloat(document.getElementById('i-uo').value||0),
+            uaf: parseFloat(document.getElementById('i-uaf').value||0), uv: parseFloat(document.getElementById('i-uv').value||0),
+            maUSD: parseFloat(document.getElementById('i-ma-usd').value||0), maCDF: parseFloat(document.getElementById('i-ma-cdf').value||0),
+            mvUSD: parseFloat(document.getElementById('i-mv-usd').value||0), mvCDF: parseFloat(document.getElementById('i-mv-cdf').value||0),
+            moUSD: parseFloat(document.getElementById('i-mo-usd').value||0), moCDF: parseFloat(document.getElementById('i-mo-cdf').value||0)
+        };
+        d.logs = []; save();
+    }
+
+    function autoCalc() {
+        const srv = document.getElementById('op-service').value;
+        const q = parseFloat(document.getElementById('op-qty').value || 0);
+        const cashField = document.getElementById('op-cash');
+        if (q <= 0) return;
+        if (srv.startsWith("U-")) {
+            let p = 0;
+            if (srv === "U-Voda") {
+                if (q >= 1) p = 3000; else if (q >= 0.6) p = 2000; else if (q >= 0.5) p = 1500; else if (q >= 0.3) p = 1000; else if (q >= 0.15) p = 500;
+            } else {
+                if (q >= 100) p = 3000; else if (q >= 60) p = 2000; else if (q >= 50) p = 1500; else if (q >= 30) p = 1000; else if (q >= 15) p = 500;
+            }
+            cashField.value = p;
+            document.getElementById('op-curr').value = "CDF";
+        } else if (srv.startsWith("M-")) {
+            cashField.value = q;
+        }
+    }
+
+    function toggleSync() { 
+        document.getElementById('op-qty').value = ""; 
+        document.getElementById('op-cash').value = ""; 
+    }
+
+    function calculateStats() {
+        let c = JSON.parse(JSON.stringify(d.m));
+        let s = { 
+            uCash:0, depUSD:0, depCDF:0, retUSD:0, retCDF:0,
+            uA:0, uO:0, uAf:0, uV:0, cashA:0, cashO:0, cashAf:0, cashV:0,
+            dA: {u:0, f:0}, dV: {u:0, f:0}, dO: {u:0, f:0},
+            rA: {u:0, f:0}, rV: {u:0, f:0}, rO: {u:0, f:0}
+        };
+
+        d.logs.forEach(l => {
+            const isUSD = l.curr === "USD";
+            if(l.srv.startsWith("U-")) {
+                const key = l.srv.includes("Air") ? "ua" : l.srv.includes("Ora") ? "uo" : l.srv.includes("Afri") ? "uaf" : "uv";
+                c[key] -= l.qty; // Le stock d'unités diminue toujours à la vente
+                if(l.srv==="U-Airtel") { s.uA+=l.qty; s.cashA+=l.cash; }
+                else if(l.srv==="U-Orange") { s.uO+=l.qty; s.cashO+=l.cash; }
+                else if(l.srv==="U-Afri") { s.uAf+=l.qty; s.cashAf+=l.cash; }
+                else { s.uV+=l.qty; s.cashV+=l.cash; }
+                
+                // On ajoute l'argent de la vente au cash physique
+                if(isUSD) c.cUSD += l.cash; else c.cCDF += l.cash;
+                s.uCash += (isUSD ? l.cash * 2500 : l.cash); 
+
+            } else if(l.srv === "CHANGE") {
+                if(isUSD) { c.cUSD += l.cash; c.cCDF -= l.qty; } else { c.cCDF += l.cash; c.cUSD -= l.qty; }
+            } else {
+                const isD = l.srv.endsWith("-D"); // Dépôt
+                const net = l.srv.includes("AIR") ? "A" : l.srv.includes("VOD") ? "V" : "O";
+                const netCode = net.toLowerCase();
+                
+                if(isD) { 
+                    // LOGIQUE DÉPÔT : + Cash Physique / - Stock Virtuel
+                    if(isUSD) { 
+                        c.cUSD += l.cash; 
+                        c["m"+netCode+"USD"] -= l.qty; 
+                        s.depUSD += l.qty; s["d"+net].u += l.qty; 
+                    } else { 
+                        c.cCDF += l.cash; 
+                        c["m"+netCode+"CDF"] -= l.qty; 
+                        s.depCDF += l.qty; s["d"+net].f += l.qty; 
+                    }
+                } else { 
+                    // LOGIQUE RETRAIT : - Cash Physique / + Stock Virtuel
+                    if(isUSD) { 
+                        c.cUSD -= l.cash; 
+                        c["m"+netCode+"USD"] += l.qty; 
+                        s.retUSD += l.qty; s["r"+net].u += l.qty; 
+                    } else { 
+                        c.cCDF -= l.cash; 
+                        c["m"+netCode+"CDF"] += l.qty; 
+                        s.retCDF += l.qty; s["r"+net].f += l.qty; 
+                    }
+                }
+            }
+        });
+        return { ...s, finalC: c };
+    }
+
+    function render() {
+        if(!d.m.ts) return;
+        const s = calculateStats(); const c = s.finalC;
+        document.getElementById('m-cash').innerText = `${d.m.cUSD}$ | ${d.m.cCDF} FC`;
+        document.getElementById('m-momo-total').innerText = `${(d.m.maUSD+d.m.mvUSD+d.m.moUSD).toFixed(1)}$ | ${(d.m.maCDF+d.m.mvCDF+d.m.moCDF).toLocaleString()} FC`;
+        document.getElementById('m-units').innerText = `A:${d.m.ua} O:${d.m.uo} Af:${d.m.uaf} V:${d.m.uv}$`;
+
+        document.getElementById('g-total-units-cash').innerText = `${s.uCash.toLocaleString()} FC`;
+        document.getElementById('g-detail-units-cash').innerText = `A:${s.uA} | O:${s.uO} | Af:${s.uAf} | V:${s.uV.toFixed(2)}$`;
+        document.getElementById('g-total-dep').innerText = `${s.depUSD}$ | ${s.depCDF}F`;
+        document.getElementById('g-detail-dep').innerText = `A:${s.dA.u}$|${s.dA.f}F V:${s.dV.u}$|${s.dV.f}F O:${s.dO.u}$|${s.dO.f}F`;
+        document.getElementById('g-total-ret').innerText = `${s.retUSD}$ | ${s.retCDF}F`;
+        document.getElementById('g-detail-ret').innerText = `A:${s.rA.u}$|${s.rA.f}F V:${s.rV.u}$|${s.rV.f}F O:${s.rO.u}$|${s.rO.f}F`;
+        
+        document.getElementById('now-cash').innerText = `${c.cUSD.toFixed(1)}$ | ${c.cCDF.toLocaleString()} FC`;
+        document.getElementById('s-ua').innerText = c.ua; document.getElementById('s-uo').innerText = c.uo; 
+        document.getElementById('s-uaf').innerText = c.uaf; document.getElementById('s-uv').innerText = c.uv.toFixed(2);
+        document.getElementById('s-air-momo').innerHTML = `<div style="color:var(--blue)">AIRTEL</div>${c.maUSD.toFixed(1)}$ / ${c.maCDF.toLocaleString()}F`;
+        document.getElementById('s-vod-momo').innerHTML = `<div style="color:var(--green)">VODA</div>${c.mvUSD.toFixed(1)}$ / ${c.mvCDF.toLocaleString()}F`;
+        document.getElementById('s-ora-momo').innerHTML = `<div style="color:var(--primary)">ORANGE</div>${c.moUSD.toFixed(1)}$ / ${c.moCDF.toLocaleString()}F`;
+
+        document.getElementById('log-body').innerHTML = d.logs.slice().reverse().map(l=> `<tr><td>${l.h}</td><td>${l.srv}</td><td>${l.qty}</td><td>${l.cash}${l.curr}</td><td><button style="color:red; background:none; border:none; cursor:pointer;" onclick="deleteOp(${l.id})">✕</button></td></tr>`).join('');
+    }
+
+    function processOp() {
+        const srv = document.getElementById('op-service').value; const qty = parseFloat(document.getElementById('op-qty').value || 0); const cash = parseFloat(document.getElementById('op-cash').value || 0); const curr = document.getElementById('op-curr').value;
+        if(qty === 0 && cash === 0) return;
+        d.logs.push({ id: Date.now(), h: new Date().toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'}), srv, qty, cash, curr, date: new Date().toISOString() });
+        save(); document.getElementById('op-qty').value=""; document.getElementById('op-cash').value="";
+    }
+
+    function deleteOp(id) { if(confirm("Supprimer l'opération ?")) { d.logs = d.logs.filter(l => l.id !== id); save(); } }
+    function resetAll() { if(confirm("Réinitialiser TOUT ?")) { d = { m: {}, logs: [] }; save(); location.reload(); } }
+
+    function exportReport(type) {
+        const s = calculateStats(); const c = s.finalC;
+        let r = `--- RAPPORT ${type} GESTION CABINE ---\nGénéré le: ${new Date().toLocaleString()}\n\n`;
+        r += `[SECTION 1 : VENTES UNITÉS]\n`;
+        r += `- AIRTEL   : ${s.uA} Unités vendues (${s.cashA} FC)\n`;
+        r += `- ORANGE   : ${s.uO} Unités vendues (${s.cashO} FC)\n`;
+        r += `- AFRICELL : ${s.uAf} Unités vendues (${s.cashAf} FC)\n`;
+        r += `- VODACOM  : ${s.uV.toFixed(2)}$ vendus (${s.cashV} FC)\n`;
+        r += `>> TOTAL ARGENT UNITÉS : ${s.uCash.toLocaleString()} FC\n\n`;
+
+        r += `[SECTION 2 : MOBILE MONEY]\n`;
+        r += `AIRTEL  => DEP: ${s.dA.u}$|${s.dA.f}F / RET: ${s.rA.u}$|${s.rA.f}F\n`;
+        r += `VODACOM => DEP: ${s.dV.u}$|${s.dV.f}F / RET: ${s.rV.u}$|${s.rV.f}F\n`;
+        r += `ORANGE  => DEP: ${s.dO.u}$|${s.dO.f}F / RET: ${s.rO.u}$|${s.rO.f}F\n\n`;
+
+        r += `[SECTION 3 : ÉTAT FINAL CAISSE]\n`;
+        r += `- ARGENT PHYSICAL CASH : ${c.cUSD.toFixed(1)}$ | ${c.cCDF.toLocaleString()} FC\n`;
+        r += `- STOCK VIRTUEL AIRTEL : ${c.maUSD.toFixed(1)}$ | ${c.maCDF.toLocaleString()} FC\n`;
+        r += `- STOCK VIRTUEL VODA   : ${c.mvUSD.toFixed(1)}$ | ${c.mvCDF.toLocaleString()} FC\n`;
+        r += `- STOCK VIRTUEL ORANGE : ${c.moUSD.toFixed(1)}$ | ${c.moCDF.toLocaleString()} FC\n`;
+        
+        const blob = new Blob([r], { type: 'text/plain' });
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = `Rapport_Cabine_${type}.txt`;
+        a.click();
+    }
+
+    setInterval(() => { document.getElementById('clock').innerText = new Date().toLocaleTimeString(); }, 1000);
+    window.onload = render;
+
+    // --- ACTIVATION DU SERVICE WORKER (POUR INSTALLATION) ---
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js').then((reg) => {
+          console.log('Service Worker enregistré !', reg.scope);
+        }).catch((err) => {
+          console.log('Échec de l\'enregistrement du SW:', err);
+        });
+      });
+    }
+</script>
+</body>
+</html>
+
