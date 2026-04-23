@@ -3,16 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>OUTILS DE GESTION CABINE</title>
-    
-    <link rel="manifest" href="manifest.json">
-    <meta name="theme-color" content="#f0b90b">
-    
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="mobile-web-app-capable" content="yes">
-    <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/3105/3105035.png">
-
+    <title>OUTILS DE GESTION CABINE - V11</title>
     <style>
         :root {
             --bg: #0d1117; --card: #161b22; --border: #30363d;
@@ -48,7 +39,6 @@
         table { width: 100%; border-collapse: collapse; font-size: 0.75rem; }
         th { text-align: left; padding: 10px; color: var(--gray); border-bottom: 1px solid var(--border); }
         td { padding: 10px; border-bottom: 1px solid #21262d; }
-        
         @keyframes blink { 50% { opacity: 0.2; } }
         .low-stock { color: var(--red) !important; animation: blink 1s infinite; font-weight: 900; }
     </style>
@@ -63,34 +53,34 @@
 
     <div class="dash-grid">
         <div class="panel morning">
-            <h2>INITIAL MATIN</h2>
+            <h2>☀️ INITIAL MATIN</h2>
             <div class="stat-card"><label>CASH MATIN</label><div id="m-cash" class="val">---</div></div>
             <div class="stat-card"><label>MOMO TOTAL MATIN</label><div id="m-momo-total" class="val">---</div></div>
             <div style="font-size: 0.55rem; color: var(--gray);">Units: <span id="m-units">---</span></div>
         </div>
 
         <div class="panel current">
-            <h2>RESUME ET BENEFICES</h2>
+            <h2>📊 RÉSUMÉ ET BÉNÉFICES</h2>
             <div class="summary-box">
-                <div class="summary-row" style="color:var(--primary); font-size: 0.75rem;">BENEFICE NET <span id="g-u-net">0 FC</span></div>
+                <div class="summary-row" style="color:var(--primary); font-size: 0.75rem;">BÉNÉFICE NET <span id="g-u-net">0 FC</span></div>
                 <div class="summary-row" style="color:var(--text); opacity: 0.8;">COUT RACHAT STOCK <span id="g-u-stock-cost">0 FC</span></div>
                 <hr style="border: 0; border-top: 1px solid var(--border); margin: 5px 0;">
                 
-                <div class="summary-row" style="color:var(--blue)">UNITES (TOTAL) <span id="g-total-units-cash">0 FC</span></div>
+                <div class="summary-row" style="color:var(--blue)">UNITÉS (TOTAL) <span id="g-total-units-cash">0 FC</span></div>
                 <div id="g-detail-units-cash" style="font-size: 0.52rem; color: var(--gray); padding-bottom: 5px;">A:0 | O:0 | Af:0 | V:0$</div>
                 
-                <div class="summary-row" style="color:var(--green)">DEPOTS <span id="g-total-dep">0$ | 0F</span></div>
+                <div class="summary-row" style="color:var(--green)">DÉPÔTS <span id="g-total-dep">0$ | 0F</span></div>
                 <div id="g-detail-dep" style="font-size: 0.52rem; color: var(--gray); padding-bottom: 5px;">A:0$|0F V:0$|0F O:0$|0F</div>
                 
                 <div class="summary-row" style="color:var(--red)">RETRAITS <span id="g-total-ret">0$ | 0F</span></div>
                 <div id="g-detail-ret" style="font-size: 0.52rem; color: var(--gray);">A:0$|0F V:0$|0F O:0$|0F</div>
             </div>
             <button class="btn btn-primary" style="font-size: 0.65rem; margin-top: 5px;" onclick="transferProfit()">VERSER GAIN DANS CASH</button>
-            <div class="stat-card" style="margin-top:10px;"><label>CASH REEL EN CAISSE</label><div id="now-cash" class="val" style="color:var(--primary); font-size: 0.9rem;">---</div></div>
+            <div class="stat-card" style="margin-top:10px;"><label>CASH RÉEL EN CAISSE</label><div id="now-cash" class="val" style="color:var(--primary); font-size: 0.9rem;">---</div></div>
         </div>
 
         <div class="panel inventory">
-            <h2>STOCK DISPO (VIRTUEL)</h2>
+            <h2>📦 STOCK DISPO (VIRTUEL)</h2>
             <div style="margin-bottom:8px">
                 <div class="res-grid" style="grid-template-columns: repeat(4, 1fr);">
                     <div class="net-box"><div style="color:var(--blue)">AIR</div><span id="s-ua">0</span></div>
@@ -111,7 +101,7 @@
     <div class="main-layout">
         <aside>
             <div class="panel" style="margin-bottom:15px; border-left: 4px solid var(--blue);">
-                <h2>OUVERTURE SESSION</h2>
+                <h2>🚀 OUVERTURE SESSION</h2>
                 <div style="display:grid; grid-template-columns: 1fr 1fr; gap:5px;"><input type="number" id="i-cash-usd" class="input-box" placeholder="Cash $"><input type="number" id="i-cash-cdf" class="input-box" placeholder="Cash FC"></div>
                 <div style="display:grid; grid-template-columns: repeat(4, 1fr); gap:4px;"><input type="number" id="i-ua" class="input-box" placeholder="U-A"><input type="number" id="i-uo" class="input-box" placeholder="U-O"><input type="number" id="i-uaf" class="input-box" placeholder="U-Af"><input type="number" id="i-uv" class="input-box" placeholder="U-V$"></div>
                 <div style="display:grid; grid-template-columns: 1fr 1.5fr; gap:5px;">
@@ -123,43 +113,38 @@
             </div>
 
             <div class="panel" style="margin-bottom:15px; border-left: 4px solid var(--green);">
-                <h2>ACTION / REAPPRO</h2>
+                <h2>➕ ACTION / OPÉRATION</h2>
                 <select id="op-service" class="input-box" onchange="toggleSync()">
-                    <optgroup label="UNITES"><option value="U-Airtel">Unit Airtel</option><option value="U-Orange">Unit Orange</option><option value="U-Afri">Unit Africell</option><option value="U-Voda">Unit Vodacom $</option></optgroup>
-                    <optgroup label="MOBILE MONEY"><option value="M-AIR-D">Airtel Depot</option><option value="M-AIR-R">Airtel Retrait</option><option value="M-VOD-D">Voda Depot</option><option value="M-VOD-R">Voda Retrait</option><option value="M-ORA-D">Orange Depot</option><option value="M-ORA-R">Orange Retrait</option></optgroup>
-                    <optgroup label="REAPPRO STOCK (+)">
-                        <option value="R-CASH-USD">Reappro Cash $</option>
-                        <option value="R-CASH-CDF">Reappro Cash FC</option>
-                        <option value="R-UA">Reappro Unit Airtel</option>
-                        <option value="R-UO">Reappro Unit Orange</option>
-                        <option value="R-UAF">Reappro Unit Afri</option>
-                        <option value="R-UV">Reappro Unit Voda $</option>
-                        <option value="R-MA">Reappro Airtel Money</option>
-                        <option value="R-MV">Reappro M-Pesa</option>
-                        <option value="R-MO">Reappro Orange Money</option>
+                    <optgroup label="UNITÉS"><option value="U-Airtel">Unit Airtel</option><option value="U-Orange">Unit Orange</option><option value="U-Afri">Unit Africell</option><option value="U-Voda">Unit Vodacom $</option></optgroup>
+                    <optgroup label="MOBILE MONEY"><option value="M-AIR-D">Airtel Dépôt</option><option value="M-AIR-R">Airtel Retrait</option><option value="M-VOD-D">Voda Dépôt</option><option value="M-VOD-R">Voda Retrait</option><option value="M-ORA-D">Orange Dépôt</option><option value="M-ORA-R">Orange Retrait</option></optgroup>
+                    <optgroup label="RÉAPPRO STOCK (+)">
+                        <option value="R-CASH-USD">Réappro Cash $</option><option value="R-CASH-CDF">Réappro Cash FC</option>
+                        <option value="R-UA">Réappro Unit Airtel</option><option value="R-UO">Réappro Unit Orange</option>
+                        <option value="R-UAF">Réappro Unit Afri</option><option value="R-UV">Réappro Unit Voda $</option>
+                        <option value="R-MA">Réappro Airtel Money</option><option value="R-MV">Réappro M-Pesa</option><option value="R-MO">Réappro Orange Money</option>
                     </optgroup>
                     <option value="CHANGE">Change Money</option>
                 </select>
                 <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
                     <input type="number" id="op-qty" step="0.01" class="input-box" placeholder="Valeur" oninput="autoCalc()">
-                    <input type="number" id="op-cash" class="input-box" placeholder="Cash Recu">
+                    <input type="number" id="op-cash" class="input-box" placeholder="Cash Reçu">
                 </div>
                 <select id="op-curr" class="input-box" onchange="autoCalc()"><option value="CDF">Francs (FC)</option><option value="USD">Dollars ($)</option></select>
                 <button class="btn btn-green" onclick="processOp()">VALIDER</button>
             </div>
 
             <div class="panel">
-                <h2>RAPPORTS</h2>
+                <h2>📥 RAPPORTS</h2>
                 <button class="btn btn-gray" onclick="exportReport('JOURNALIER')">RAPPORT JOUR</button>
                 <button class="btn btn-gray" onclick="exportReport('HEBDOMADAIRE')">RAPPORT SEMAINE</button>
                 <button class="btn btn-gray" onclick="exportReport('MENSUEL')">RAPPORT MOIS</button>
-                <button class="btn btn-red" style="font-size:0.6rem; margin-top:10px;" onclick="resetAll()">RESET TOUT</button>
+                <button class="btn btn-red" style="font-size:0.6rem; margin-top:10px;" onclick="resetAll()">RÉINITIALISER TOUT</button>
             </div>
         </aside>
 
         <section>
             <div class="panel">
-                <h2>HISTORIQUE</h2>
+                <h2>📜 HISTORIQUE RÉCENT</h2>
                 <div style="max-height: 550px; overflow-y: auto;">
                     <table>
                         <thead><tr><th>Heure</th><th>Service</th><th>Quantité</th><th>Cash</th><th></th></tr></thead>
@@ -172,6 +157,7 @@
 </div>
 
 <script>
+    // INITIALISATION : Garde la même clé fkm_v11 pour ne rien perdre
     let d = JSON.parse(localStorage.getItem('fkm_v11')) || { m: {}, logs: [] };
 
     function save() { localStorage.setItem('fkm_v11', JSON.stringify(d)); render(); }
@@ -279,7 +265,6 @@
         document.getElementById('g-total-units-cash').innerText = `${s.uCash.toLocaleString()} FC`;
         document.getElementById('g-detail-units-cash').innerText = `A:${s.uA} | O:${s.uO} | Af:${s.uAf} | V:${s.uV.toFixed(2)}$`;
         
-        // MAJ DEPOTS / RETRAITS DETAIL
         document.getElementById('g-total-dep').innerText = `${s.depUSD}$ | ${s.depCDF}F`;
         document.getElementById('g-detail-dep').innerText = `A:${s.dA.u}$|${s.dA.f}F V:${s.dV.u}$|${s.dV.f}F O:${s.dO.u}$|${s.dO.f}F`;
         document.getElementById('g-total-ret').innerText = `${s.retUSD}$ | ${s.retCDF}F`;
@@ -315,22 +300,22 @@
 
     function exportReport(type) {
         const s = calculateStats(); const c = s.finalC;
-        let r = `--- RAPPORT ${type} FKM-ENERGY ---\nDate: ${new Date().toLocaleString()}\n\n`;
-        r += `[SECTION 1 : RENTABILITE]\n`;
-        r += `- BENEFICE NET   : ${Math.floor(s.uNet)} FC\n`;
+        let r = `--- RAPPORT ${type} GESTION CABINE ---\nDate: ${new Date().toLocaleString()}\n\n`;
+        r += `[SECTION 1 : RENTABILITÉ]\n`;
+        r += `- BÉNÉFICE NET   : ${Math.floor(s.uNet)} FC\n`;
         r += `- COUT RACHAT    : ${Math.floor(s.uStockCost)} FC\n\n`;
-        r += `[SECTION 2 : DEPOTS ET RETRAITS]\n`;
-        r += `DEPOTS:\n- AIRTEL: ${s.dA.u}$|${s.dA.f}F\n- VODA: ${s.dV.u}$|${s.dV.f}F\n- ORANGE: ${s.dO.u}$|${s.dO.f}F\n\n`;
+        r += `[SECTION 2 : DÉPÔTS ET RETRAITS]\n`;
+        r += `DÉPÔTS:\n- AIRTEL: ${s.dA.u}$|${s.dA.f}F\n- VODA: ${s.dV.u}$|${s.dV.f}F\n- ORANGE: ${s.dO.u}$|${s.dO.f}F\n\n`;
         r += `RETRAITS:\n- AIRTEL: ${s.rA.u}$|${s.rA.f}F\n- VODA: ${s.rV.u}$|${s.rV.f}F\n- ORANGE: ${s.rO.u}$|${s.rO.f}F\n\n`;
-        r += `[SECTION 3 : CAISSE FINALE]\n`;
-        r += `- CASH : ${c.cUSD.toFixed(1)}$ | ${c.cCDF} FC\n`;
+        r += `[SECTION 3 : ÉTAT FINAL CAISSE]\n`;
+        r += `- PHYSICAL CASH : ${c.cUSD.toFixed(1)}$ | ${c.cCDF.toLocaleString()} FC\n`;
         const blob = new Blob([r], { type: 'text/plain' });
         const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
-        a.download = `Rapport_${type}.txt`; a.click();
+        a.download = `Rapport_Cabine_${type}.txt`; a.click();
     }
 
-    function deleteOp(id) { if(confirm("Supprimer ?")) { d.logs = d.logs.filter(l => l.id !== id); save(); } }
-    function resetAll() { if(confirm("Tout effacer ?")) { d = { m: {}, logs: [] }; save(); location.reload(); } }
+    function deleteOp(id) { if(confirm("Supprimer l'opération ?")) { d.logs = d.logs.filter(l => l.id !== id); save(); } }
+    function resetAll() { if(confirm("Réinitialiser TOUT ?")) { d = { m: {}, logs: [] }; save(); location.reload(); } }
     setInterval(() => { document.getElementById('clock').innerText = new Date().toLocaleTimeString(); }, 1000);
     window.onload = render;
 </script>
