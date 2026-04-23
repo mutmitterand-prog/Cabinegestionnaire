@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>OUTILS DE GESTION CABINE - V11</title>
+    <link rel="manifest" href="./manifest.json">
     <style>
         :root {
             --bg: #0d1117; --card: #161b22; --border: #30363d;
@@ -318,6 +319,15 @@
     function resetAll() { if(confirm("Réinitialiser TOUT ?")) { d = { m: {}, logs: [] }; save(); location.reload(); } }
     setInterval(() => { document.getElementById('clock').innerText = new Date().toLocaleTimeString(); }, 1000);
     window.onload = render;
+
+    // CODE POUR L'INSTALLATION (SERVICE WORKER)
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+            navigator.serviceWorker.register('./sw.js')
+                .then(reg => console.log('App prête !'))
+                .catch(err => console.log('Erreur:', err));
+        });
+    }
 </script>
 </body>
 </html>
