@@ -465,4 +465,62 @@
     window.onload = render;
 </script>
 </body>
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+  import { getDatabase, ref, set, onValue } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+
+  // Vos configurations Firebase (à copier depuis votre console Firebase)
+  const firebaseConfig = {
+    apiKey: "VOTRE_API_KEY",
+    authDomain: "VOTRE_PROJET.firebaseapp.com",
+    databaseURL: "https://console.firebase.google.com/u/0/project/mut-cabine-gestion/database/mut-cabine-gestion-default-rtdb/data/~2Fcabines~2FPPMCABINE?hl=en-US#",
+    projectId: "VOTRE_PROJET",
+    storageBucket: "VOTRE_PROJET.appspot.com",
+    messagingSenderId: "ID",
+    appId: "APP_ID"
+  };
+  // 1. Initialisation de Firebase
+  const app = initializeApp(firebaseConfig);
+  const db = getDatabase(app);
+  const dataRef = ref(db, 'PPMCABINE'); 
+
+  // 2. Lien avec ta fonction de sauvegarde
+  window.save = function() {
+    localStorage.setItem('fkm_v11', JSON.stringify(d));
+    set(dataRef, d); // Envoie les données vers Firebase
+    render();
+  };
+
+  // 3. Écoute des changements en temps réel
+  onValue(dataRef, (snapshot) => {
+    const remoteData = snapshot.val();
+    if (remoteData) {
+      window.d = remoteData; // Met à jour ta variable globale d
+      render(); // Redessine ton interface avec le design sombre
+    }
+  });
+
+  const app = initializeApp(firebaseConfig);
+  const db = getDatabase(app);
+  const dataRef = ref(db, 'gestion_cabine');
+
+  // MODIFICATION DE VOTRE FONCTION SAVE() SANS TOUCHER AU RESTE
+  // On remplace la fonction save() originale par celle-ci pour envoyer vers Firebase
+  window.save = function() {
+    localStorage.setItem('fkm_v11', JSON.stringify(d));
+    set(dataRef, d); // Envoie vers le Cloud
+    render();
+  };
+
+  // RÉCUPÉRATION EN TEMPS RÉEL (SYNCHRONISATION)
+  onValue(dataRef, (snapshot) => {
+    const remoteData = snapshot.val();
+    if (remoteData) {
+      window.d = remoteData;
+
+      render(); // Met à jour l'affichage avec le design que vous aimez
+    }
+  });
+</script>
+
 </html>
