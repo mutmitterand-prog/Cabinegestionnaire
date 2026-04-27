@@ -3,8 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>OUTILS DE GESTION CABINE - V11</title>
-    <link rel="manifest" href="./manifest.json">
+    <title>OUTILS DE GESTION CABINE - V11.3 SECURE</title>
     <style>
         :root {
             --bg: #0d1117; --card: #161b22; --border: #30363d;
@@ -16,7 +15,7 @@
         header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border-bottom: 1px solid var(--border); padding-bottom: 10px; }
         .dash-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px; margin-bottom: 15px; }
         @media (max-width: 1100px) { .dash-grid { grid-template-columns: 1fr; } }
-        .panel { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 12px; }
+        .panel { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 12px; transition: 0.3s; }
         .panel.morning { border-top: 4px solid var(--blue); }
         .panel.current { border-top: 4px solid var(--primary); }
         .panel.inventory { border-top: 4px solid var(--green); }
@@ -42,18 +41,42 @@
         td { padding: 10px; border-bottom: 1px solid #21262d; }
         @keyframes blink { 50% { opacity: 0.2; } }
         .low-stock { color: var(--red) !important; animation: blink 1s infinite; font-weight: 900; }
+        .admin-only { display: none; }
+        .is-admin .admin-only { display: block !important; }
+        .locked { opacity: 0.6; pointer-events: none; filter: grayscale(1); }
+
+        #modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); display: none; justify-content: center; align-items: center; z-index: 1000; }
+        .modal-content { background: white; color: black; border-radius: 8px; width: 95%; max-width: 800px; height: 95vh; display: flex; flex-direction: column; overflow: hidden; }
+        .report-preview { flex-grow: 1; padding: 20px; overflow-y: auto; background: white; }
+        @media print { .no-print { display: none !important; } .modal-content { height: auto; width: 100%; } }
     </style>
 </head>
-<body>
+<body id="main-body">
+
+<div id="modal-overlay">
+    <div class="modal-content">
+        <div style="padding: 10px; background: #222; color: white; display: flex; justify-content: space-between; align-items: center;" class="no-print">
+            <b>PRÉVISUALISATION DU RAPPORT</b>
+            <button onclick="closeModal()" style="background:#da3633; color:white; border:none; padding:5px 10px; cursor:pointer;">X</button>
+        </div>
+        <div id="report-to-print" class="report-preview"></div>
+        <div style="padding: 15px; background: #f8f9fa; text-align: right; border-top: 1px solid #ddd;" class="no-print">
+            <button class="btn btn-green" style="width:200px" onclick="window.print()">IMPRIMER / SAUVER PDF</button>
+        </div>
+    </div>
+</div>
 
 <div class="container">
     <header>
         <div style="font-weight: 900; font-size: 1.2rem; text-transform: uppercase;">GESTION <span style="color:var(--primary)">CABINE</span></div>
-        <div id="clock" style="font-family: monospace; color: var(--gray);">00:00:00</div>
+        <div style="display:flex; align-items:center; gap:10px;">
+            <button id="auth-btn" onclick="toggleAuth()" style="background:var(--border); color:white; border:1px solid var(--gray); padding:5px 12px; border-radius:20px; font-size:0.6rem; cursor:pointer;">🔒 MODE: STAFF</button>
+            <div id="clock" style="font-family: monospace; color: var(--gray);">00:00:00</div>
+        </div>
     </header>
 
     <div class="dash-grid">
-        <div class="panel morning">
+        <div class="panel morning" id="panel-morning">
             <h2>☀️ INITIAL MATIN</h2>
             <div class="stat-card"><label>CASH MATIN</label><div id="m-cash" class="val">---</div></div>
             <div class="stat-card"><label>MOMO TOTAL MATIN</label><div id="m-momo-total" class="val">---</div></div>
@@ -63,20 +86,17 @@
         <div class="panel current">
             <h2>📊 RÉSUMÉ ET BÉNÉFICES</h2>
             <div class="summary-box">
-                <div class="summary-row" style="color:var(--primary); font-size: 0.75rem;">BÉNÉFICE NET <span id="g-u-net">0 FC</span></div>
+                <div class="summary-row" style="color:var(--primary); font-size: 0.75rem;">BÉNÉFICE NET <span id="g-u-net">SÉCURISÉ</span></div>
                 <div class="summary-row" style="color:var(--text); opacity: 0.8;">COUT RACHAT STOCK <span id="g-u-stock-cost">0 FC</span></div>
                 <hr style="border: 0; border-top: 1px solid var(--border); margin: 5px 0;">
-                
                 <div class="summary-row" style="color:var(--blue)">UNITÉS (TOTAL) <span id="g-total-units-cash">0 FC</span></div>
                 <div id="g-detail-units-cash" style="font-size: 0.52rem; color: var(--gray); padding-bottom: 5px;">A:0 | O:0 | Af:0 | V:0$</div>
-                
                 <div class="summary-row" style="color:var(--green)">DÉPÔTS <span id="g-total-dep">0$ | 0F</span></div>
                 <div id="g-detail-dep" style="font-size: 0.52rem; color: var(--gray); padding-bottom: 5px;">A:0$|0F V:0$|0F O:0$|0F</div>
-                
                 <div class="summary-row" style="color:var(--red)">RETRAITS <span id="g-total-ret">0$ | 0F</span></div>
                 <div id="g-detail-ret" style="font-size: 0.52rem; color: var(--gray);">A:0$|0F V:0$|0F O:0$|0F</div>
             </div>
-            <button class="btn btn-primary" style="font-size: 0.65rem; margin-top: 5px;" onclick="transferProfit()">VERSER GAIN DANS CASH</button>
+            <button class="btn btn-primary admin-only" style="font-size: 0.65rem; margin-top: 5px;" onclick="transferProfit()">VERSER GAIN DANS CASH</button>
             <div class="stat-card" style="margin-top:10px;"><label>CASH RÉEL EN CAISSE</label><div id="now-cash" class="val" style="color:var(--primary); font-size: 0.9rem;">---</div></div>
         </div>
 
@@ -101,7 +121,7 @@
 
     <div class="main-layout">
         <aside>
-            <div class="panel" style="margin-bottom:15px; border-left: 4px solid var(--blue);">
+            <div class="panel morning" id="init-form" style="margin-bottom:15px; border-left: 4px solid var(--blue);">
                 <h2>🚀 OUVERTURE SESSION</h2>
                 <div style="display:grid; grid-template-columns: 1fr 1fr; gap:5px;"><input type="number" id="i-cash-usd" class="input-box" placeholder="Cash $"><input type="number" id="i-cash-cdf" class="input-box" placeholder="Cash FC"></div>
                 <div style="display:grid; grid-template-columns: repeat(4, 1fr); gap:4px;"><input type="number" id="i-ua" class="input-box" placeholder="U-A"><input type="number" id="i-uo" class="input-box" placeholder="U-O"><input type="number" id="i-uaf" class="input-box" placeholder="U-Af"><input type="number" id="i-uv" class="input-box" placeholder="U-V$"></div>
@@ -110,7 +130,7 @@
                     <input type="number" id="i-mv-usd" class="input-box" placeholder="Voda $"><input type="number" id="i-mv-cdf" class="input-box" placeholder="Voda FC">
                     <input type="number" id="i-mo-usd" class="input-box" placeholder="Orange $"><input type="number" id="i-mo-cdf" class="input-box" placeholder="Orange FC">
                 </div>
-                <button class="btn btn-blue" onclick="setDailyInit()">LANCER LA SESSION</button>
+                <button class="btn btn-blue" id="btn-session" onclick="setDailyInit()">LANCER LA SESSION</button>
             </div>
 
             <div class="panel" style="margin-bottom:15px; border-left: 4px solid var(--green);">
@@ -136,10 +156,8 @@
 
             <div class="panel">
                 <h2>📥 RAPPORTS</h2>
-                <button class="btn btn-gray" onclick="exportReport('JOURNALIER')">RAPPORT JOUR</button>
-                <button class="btn btn-gray" onclick="exportReport('HEBDOMADAIRE')">RAPPORT SEMAINE</button>
-                <button class="btn btn-gray" onclick="exportReport('MENSUEL')">RAPPORT MOIS</button>
-                <button class="btn btn-red" style="font-size:0.6rem; margin-top:10px;" onclick="resetAll()">RÉINITIALISER TOUT</button>
+                <button class="btn btn-primary admin-only" onclick="generateDetailedPDF()">📄 GÉNÉRER RAPPORT PDF</button>
+                <button class="btn btn-red admin-only" style="font-size:0.6rem; margin-top:10px;" onclick="resetAll()">⚠️ RÉINITIALISER TOUT</button>
             </div>
         </aside>
 
@@ -148,7 +166,7 @@
                 <h2>📜 HISTORIQUE RÉCENT</h2>
                 <div style="max-height: 550px; overflow-y: auto;">
                     <table>
-                        <thead><tr><th>Heure</th><th>Service</th><th>Quantité</th><th>Cash</th><th></th></tr></thead>
+                        <thead><tr><th>Heure</th><th>Service</th><th>Qté</th><th>Cash</th><th></th></tr></thead>
                         <tbody id="log-body"></tbody>
                     </table>
                 </div>
@@ -158,12 +176,32 @@
 </div>
 
 <script>
-    // INITIALISATION : Garde la même clé fkm_v11 pour ne rien perdre
-    let d = JSON.parse(localStorage.getItem('fkm_v11')) || { m: {}, logs: [] };
+    let d = JSON.parse(localStorage.getItem('fkm_v11')) || { m: {}, logs: [], errors: [] };
+    let isAdmin = false;
+    const ADMIN_PIN = "2026";
 
     function save() { localStorage.setItem('fkm_v11', JSON.stringify(d)); render(); }
 
+    function toggleAuth() {
+        if(!isAdmin) {
+            let p = prompt("Code PIN Administrateur :");
+            if(p === ADMIN_PIN) {
+                isAdmin = true;
+                document.getElementById('main-body').classList.add('is-admin');
+                document.getElementById('auth-btn').innerText = "🔓 MODE: ADMIN";
+                document.getElementById('auth-btn').style.background = "var(--green)";
+            } else { alert("Code incorrect !"); }
+        } else {
+            isAdmin = false;
+            document.getElementById('main-body').classList.remove('is-admin');
+            document.getElementById('auth-btn').innerText = "🔒 MODE: STAFF";
+            document.getElementById('auth-btn').style.background = "var(--border)";
+        }
+        render();
+    }
+
     function setDailyInit() {
+        if(!confirm("Confirmer les stocks de départ ?")) return;
         d.m = {
             ts: new Date().toISOString(),
             cUSD: parseFloat(document.getElementById('i-cash-usd').value||0), cCDF: parseFloat(document.getElementById('i-cash-cdf').value||0),
@@ -173,7 +211,7 @@
             mvUSD: parseFloat(document.getElementById('i-mv-usd').value||0), mvCDF: parseFloat(document.getElementById('i-mv-cdf').value||0),
             moUSD: parseFloat(document.getElementById('i-mo-usd').value||0), moCDF: parseFloat(document.getElementById('i-mo-cdf').value||0)
         };
-        d.logs = []; save();
+        d.logs = []; d.errors = []; save();
     }
 
     function autoCalc() {
@@ -190,24 +228,20 @@
             }
             cashField.value = p;
             document.getElementById('op-curr').value = "CDF";
-        } else if (srv.startsWith("M-")) {
-            cashField.value = q;
-        }
+        } else if (srv.startsWith("M-")) { cashField.value = q; }
     }
 
-    function toggleSync() { 
-        document.getElementById('op-qty').value = ""; 
-        document.getElementById('op-cash').value = ""; 
-    }
+    function toggleSync() { document.getElementById('op-qty').value = ""; document.getElementById('op-cash').value = ""; }
 
     function calculateStats() {
-        let c = JSON.parse(JSON.stringify(d.m));
+        let c = JSON.parse(JSON.stringify(d.m || {}));
         let s = { 
             uCash:0, uNet:0, depUSD:0, depCDF:0, retUSD:0, retCDF:0,
             uA:0, uO:0, uAf:0, uV:0, cashA:0, cashO:0, cashAf:0, cashV:0,
             dA: {u:0, f:0}, dV: {u:0, f:0}, dO: {u:0, f:0},
             rA: {u:0, f:0}, rV: {u:0, f:0}, rO: {u:0, f:0}
         };
+        if(!d.m || !d.m.ts) return s;
 
         d.logs.forEach(l => {
             const isUSD = l.curr === "USD";
@@ -230,9 +264,9 @@
                 else if(l.srv==="R-UO") c.uo += l.qty;
                 else if(l.srv==="R-UAF") c.uaf += l.qty;
                 else if(l.srv==="R-UV") c.uv += l.qty;
-                else if(l.srv==="R-MA") c.maCDF += l.qty;
-                else if(l.srv==="R-MV") c.mvCDF += l.qty;
-                else if(l.srv==="R-MO") c.moCDF += l.qty;
+                else if(l.srv==="R-MA") { if(isUSD) c.maUSD += l.qty; else c.maCDF += l.qty; }
+                else if(l.srv==="R-MV") { if(isUSD) c.mvUSD += l.qty; else c.mvCDF += l.qty; }
+                else if(l.srv==="R-MO") { if(isUSD) c.moUSD += l.qty; else c.moCDF += l.qty; }
             }
             else if(l.srv === "V-GAIN") { c.cCDF += l.cash; s.uNet -= l.cash; }
             else if(l.srv === "CHANGE") {
@@ -256,9 +290,14 @@
     }
 
     function render() {
-        if(!d.m.ts) return;
+        if(!d.m || !d.m.ts) return;
         const s = calculateStats(); const c = s.finalC;
-        document.getElementById('g-u-net').innerText = `${Math.floor(s.uNet).toLocaleString()} FC`;
+        
+        const isSessionStarted = d.m.ts && !isAdmin;
+        document.getElementById('init-form').classList.toggle('locked', isSessionStarted);
+        document.getElementById('btn-session').style.display = isSessionStarted ? "none" : "block";
+
+        document.getElementById('g-u-net').innerText = isAdmin ? `${Math.floor(s.uNet).toLocaleString()} FC` : "SÉCURISÉ";
         document.getElementById('g-u-stock-cost').innerText = `${Math.floor(s.uStockCost).toLocaleString()} FC`;
         document.getElementById('m-cash').innerText = `${d.m.cUSD}$ | ${d.m.cCDF} FC`;
         document.getElementById('m-momo-total').innerText = `${(d.m.maUSD+d.m.mvUSD+d.m.moUSD).toFixed(1)}$ | ${(d.m.maCDF+d.m.mvCDF+d.m.moCDF).toLocaleString()} FC`;
@@ -272,62 +311,158 @@
         document.getElementById('g-detail-ret').innerText = `A:${s.rA.u}$|${s.rA.f}F V:${s.rV.u}$|${s.rV.f}F O:${s.rO.u}$|${s.rO.f}F`;
 
         document.getElementById('now-cash').innerText = `${c.cUSD.toFixed(1)}$ | ${c.cCDF.toLocaleString()} FC`;
+        
         const stocks = [['s-ua', c.ua], ['s-uo', c.uo], ['s-uaf', c.uaf]];
         stocks.forEach(([id, val]) => {
             const el = document.getElementById(id); el.innerText = val; el.className = val < 50 ? "low-stock" : "";
         });
         document.getElementById('s-uv').innerText = c.uv.toFixed(2);
         
-        let airtelVirtuelUSD = d.m.maUSD + s.rA.u - s.dA.u;
-        let airtelVirtuelCDF = d.m.maCDF + s.rA.f - s.dA.f + s.uA; 
-        document.getElementById('s-air-momo').innerHTML = `<div style="color:var(--blue)">AIRTEL</div>${airtelVirtuelUSD.toFixed(1)}$ / ${airtelVirtuelCDF.toLocaleString()}F`;
-        document.getElementById('s-vod-momo').innerHTML = `<div style="color:var(--green)">VODA</div>${(d.m.mvUSD + s.rV.u - s.dV.u).toFixed(1)}$ / ${(d.m.mvCDF + s.rV.f - s.dV.f + s.uV*2500).toLocaleString()}F`;
-        document.getElementById('s-ora-momo').innerHTML = `<div style="color:var(--primary)">ORANGE</div>${(d.m.moUSD + s.rO.u - s.dO.u).toFixed(1)}$ / ${(d.m.moCDF + s.rO.f - s.dO.f + s.uO).toLocaleString()}F`;
+        document.getElementById('s-air-momo').innerHTML = `<div style="color:var(--blue)">AIRTEL</div>${c.maUSD.toFixed(1)}$ / ${c.maCDF.toLocaleString()}F`;
+        document.getElementById('s-vod-momo').innerHTML = `<div style="color:var(--green)">VODA</div>${c.mvUSD.toFixed(1)}$ / ${c.mvCDF.toLocaleString()}F`;
+        document.getElementById('s-ora-momo').innerHTML = `<div style="color:var(--primary)">ORANGE</div>${c.moUSD.toFixed(1)}$ / ${c.moCDF.toLocaleString()}F`;
+        
         document.getElementById('log-body').innerHTML = d.logs.slice().reverse().map(l=> `<tr><td>${l.h}</td><td>${l.srv}</td><td>${l.qty}</td><td>${l.cash}${l.curr}</td><td><button style="color:red; background:none; border:none; cursor:pointer;" onclick="deleteOp(${l.id})">✕</button></td></tr>`).join('');
     }
 
-    function transferProfit() {
-        const s = calculateStats(); if(s.uNet <= 0) return alert("Pas de gain");
-        d.logs.push({ id: Date.now(), h: new Date().toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'}), srv: "V-GAIN", qty: 0, cash: s.uNet, curr: "FC" });
-        save();
+    function deleteOp(id) {
+        if(!confirm("Signaler cette opération comme une erreur ?")) return;
+        const idx = d.logs.findIndex(l => l.id === id);
+        if(idx !== -1) {
+            let op = d.logs[idx];
+            op.errTime = new Date().toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});
+            op.errBy = isAdmin ? "ADMIN" : "STAFF";
+            if(!d.errors) d.errors = [];
+            d.errors.push(op); // On archive dans la liste d'erreurs
+            d.logs.splice(idx, 1);
+            save();
+        }
     }
 
-    function processOp() {
-        const srv = document.getElementById('op-service').value; const qty = parseFloat(document.getElementById('op-qty').value || 0); const cash = parseFloat(document.getElementById('op-cash').value || 0); const curr = document.getElementById('op-curr').value;
-        if(qty === 0 && cash === 0) return;
-        d.logs.push({ id: Date.now(), h: new Date().toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'}), srv, qty, cash, curr });
-        save(); document.getElementById('op-qty').value=""; document.getElementById('op-cash').value="";
+    function generateDetailedPDF() {
+        try {
+            if(!isAdmin) return alert("Accès réservé à l'administrateur.");
+            const s = calculateStats(); const c = s.finalC;
+            
+            let reap = { usd: 0, cdf: 0, ua: 0, uo: 0, uaf: 0, uv: 0, ma: 0, mv: 0, mo: 0 };
+            d.logs.filter(l => l.srv.startsWith("R-")).forEach(l => {
+                if(l.srv === "R-CASH-USD") reap.usd += l.qty;
+                else if(l.srv === "R-CASH-CDF") reap.cdf += l.qty;
+                else if(l.srv === "R-UA") reap.ua += l.qty;
+                else if(l.srv === "R-UO") reap.uo += l.qty;
+                else if(l.srv === "R-UAF") reap.uaf += l.qty;
+                else if(l.srv === "R-UV") reap.uv += l.qty;
+                else if(l.srv === "R-MA") reap.ma += l.qty;
+                else if(l.srv === "R-MV") reap.mv += l.qty;
+                else if(l.srv === "R-MO") reap.mo += l.qty;
+            });
+
+            let errorHtml = "";
+            if (d.errors && d.errors.length > 0) {
+                errorHtml = `
+                <h3 style="font-size:12px; background:#ffebee; color:#c62828; padding:4px; margin:10px 0 5px 0; border-left:3px solid #c62828;">4. LOGS DES ERREURS / ANNULATIONS</h3>
+                <table style="width:100%; border-collapse:collapse; font-size:9px; margin-bottom:12px;">
+                    <tr style="background:#f4f4f4;">
+                        <th style="border:1px solid #ddd; padding:4px;">Heure Op</th>
+                        <th style="border:1px solid #ddd; padding:4px;">Annulé à</th>
+                        <th style="border:1px solid #ddd; padding:4px;">Service</th>
+                        <th style="border:1px solid #ddd; padding:4px;">Valeur</th>
+                        <th style="border:1px solid #ddd; padding:4px;">Par</th>
+                    </tr>
+                    ${d.errors.map(e => `
+                        <tr>
+                            <td style="border:1px solid #ddd; padding:4px;">${e.h}</td>
+                            <td style="border:1px solid #ddd; padding:4px;">${e.errTime}</td>
+                            <td style="border:1px solid #ddd; padding:4px;">${e.srv}</td>
+                            <td style="border:1px solid #ddd; padding:4px;">${e.qty} | ${e.cash}${e.curr}</td>
+                            <td style="border:1px solid #ddd; padding:4px;">${e.errBy}</td>
+                        </tr>
+                    `).join('')}
+                </table>`;
+            }
+
+            let html = `
+                <div style="color:black; font-family:Arial, sans-serif; padding:15px; line-height:1.3;">
+                    <div style="text-align:center; border-bottom:2px solid #000; margin-bottom:10px;">
+                        <h1 style="margin:0; font-size:20px;">FKM-ENERGY SHOP</h1>
+                        <p style="margin:2px 0; font-weight:bold; font-size:12px;">RAPPORT JOURNALIER DÉTAILLÉ COMPLET</p>
+                        <p style="font-size:10px;">Généré le: ${new Date().toLocaleString()}</p>
+                    </div>
+
+                    <div style="background:#f4f4f4; padding:8px; border:1px solid #ddd; margin-bottom:12px; font-size:11px;">
+                        <b>OUVERTURE MATIN :</b><br>
+                        Cash: ${d.m.cUSD || 0}$ | ${(d.m.cCDF || 0).toLocaleString()} FC<br>
+                        Unités: A:${d.m.ua} O:${d.m.uo} Af:${d.m.uaf} V:${d.m.uv}$
+                    </div>
+
+                    <h3 style="font-size:12px; background:#eee; padding:4px; margin:10px 0 5px 0; border-left:3px solid #333;">1. VENTES UNITÉS</h3>
+                    <table style="width:100%; border-collapse:collapse; font-size:11px; margin-bottom:12px;">
+                        <tr style="background:#f9f9f9;">
+                            <th style="border:1px solid #ddd; padding:4px; text-align:left;">Réseau</th>
+                            <th style="border:1px solid #ddd; padding:4px;">Quantité</th>
+                            <th style="border:1px solid #ddd; padding:4px;">Cash Perçu</th>
+                        </tr>
+                        <tr><td style="border:1px solid #ddd; padding:4px;">Airtel</td><td style="border:1px solid #ddd; padding:4px; text-align:center;">${s.uA}</td><td style="border:1px solid #ddd; padding:4px;">${s.cashA.toLocaleString()} FC</td></tr>
+                        <tr><td style="border:1px solid #ddd; padding:4px;">Orange</td><td style="border:1px solid #ddd; padding:4px; text-align:center;">${s.uO}</td><td style="border:1px solid #ddd; padding:4px;">${s.cashO.toLocaleString()} FC</td></tr>
+                        <tr><td style="border:1px solid #ddd; padding:4px;">Africell</td><td style="border:1px solid #ddd; padding:4px; text-align:center;">${s.uAf}</td><td style="border:1px solid #ddd; padding:4px;">${s.cashAf.toLocaleString()} FC</td></tr>
+                        <tr><td style="border:1px solid #ddd; padding:4px;">Vodacom</td><td style="border:1px solid #ddd; padding:4px; text-align:center;">${s.uV.toFixed(2)}$</td><td style="border:1px solid #ddd; padding:4px;">${s.cashV.toLocaleString()} FC</td></tr>
+                    </table>
+
+                    <h3 style="font-size:12px; background:#eee; padding:4px; margin:10px 0 5px 0; border-left:3px solid #333;">2. FLUX MOBILE MONEY</h3>
+                    <table style="width:100%; border-collapse:collapse; font-size:10px; margin-bottom:12px;">
+                        <tr style="background:#f9f9f9;">
+                            <th style="border:1px solid #ddd; padding:4px;">Service</th>
+                            <th style="border:1px solid #ddd; padding:4px;">Dépôts ($ / FC)</th>
+                            <th style="border:1px solid #ddd; padding:4px;">Retraits ($ / FC)</th>
+                        </tr>
+                        <tr><td style="border:1px solid #ddd; padding:4px;">Airtel Money</td><td style="border:1px solid #ddd; padding:4px;">${s.dA.u}$ / ${s.dA.f} FC</td><td style="border:1px solid #ddd; padding:4px;">${s.rA.u}$ / ${s.rA.f} FC</td></tr>
+                        <tr><td style="border:1px solid #ddd; padding:4px;">M-Pesa (Voda)</td><td style="border:1px solid #ddd; padding:4px;">${s.dV.u}$ / ${s.dV.f} FC</td><td style="border:1px solid #ddd; padding:4px;">${s.rV.u}$ / ${s.rV.f} FC</td></tr>
+                        <tr><td style="border:1px solid #ddd; padding:4px;">Orange Money</td><td style="border:1px solid #ddd; padding:4px;">${s.dO.u}$ / ${s.dO.f} FC</td><td style="border:1px solid #ddd; padding:4px;">${s.rO.u}$ / ${s.rO.f} FC</td></tr>
+                    </table>
+
+                    <h3 style="font-size:12px; background:#eee; padding:4px; margin:10px 0 5px 0; border-left:3px solid #333;">3. RÉAPPROVISIONNEMENTS</h3>
+                    <table style="width:100%; border-collapse:collapse; font-size:10px; margin-bottom:12px;">
+                        <tr style="background:#f9f9f9;"><th style="border:1px solid #ddd; padding:4px; text-align:left;">Catégorie</th><th style="border:1px solid #ddd; padding:4px;">Valeurs Ajoutées</th></tr>
+                        <tr><td style="border:1px solid #ddd; padding:4px;">Cash (+)</td><td style="border:1px solid #ddd; padding:4px;">${reap.usd}$ | ${reap.cdf.toLocaleString()} FC</td></tr>
+                        <tr><td style="border:1px solid #ddd; padding:4px;">Unités (+)</td><td style="border:1px solid #ddd; padding:4px;">A:${reap.ua} | O:${reap.uo} | Af:${reap.uaf} | V:${reap.uv}$</td></tr>
+                        <tr><td style="border:1px solid #ddd; padding:4px;">Momo (+)</td><td style="border:1px solid #ddd; padding:4px;">A:${reap.ma}F | V:${reap.mv}F | O:${reap.mo}F</td></tr>
+                    </table>
+
+                    ${errorHtml}
+
+                    <div style="margin-top:15px; border:2px solid #000; padding:12px; background:#fffdf2;">
+                        <h3 style="margin:0 0 8px 0; font-size:14px; border-bottom:1px solid #000;">SITUATION FINALE DE CLÔTURE</h3>
+                        <div style="font-size:13px; font-weight:bold; color:#d32f2f; margin-bottom:10px;">
+                            CASH EN CAISSE : ${c.cUSD.toFixed(1)}$ | ${c.cCDF.toLocaleString()} FC
+                        </div>
+                        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; font-size:10px;">
+                            <div style="border:1px solid #ccc; padding:5px;">
+                                <b>Unités Restantes :</b><br>
+                                A: ${c.ua} | O: ${c.uo}<br>
+                                Af: ${c.uaf} | V: ${c.uv.toFixed(2)}$
+                            </div>
+                            <div style="border:1px solid #ccc; padding:5px;">
+                                <b>Balances Momo :</b><br>
+                                A: ${c.maUSD}$ / ${c.maCDF}F<br>
+                                V: ${c.mvUSD}$ / ${c.mvCDF}F<br>
+                                O: ${c.moUSD}$ / ${c.moCDF}F
+                            </div>
+                        </div>
+                        <div style="margin-top:12px; font-size:14px; color:green;"><b>BÉNÉFICE NET ESTIMÉ : ${Math.floor(s.uNet).toLocaleString()} FC</b></div>
+                    </div>
+                </div>`;
+
+            document.getElementById('report-to-print').innerHTML = html;
+            document.getElementById('modal-overlay').style.display = 'flex';
+        } catch (err) { alert("Erreur génération : " + err.message); }
     }
 
-    function exportReport(type) {
-        const s = calculateStats(); const c = s.finalC;
-        let r = `--- RAPPORT ${type} GESTION CABINE ---\nDate: ${new Date().toLocaleString()}\n\n`;
-        r += `[SECTION 1 : RENTABILITÉ]\n`;
-        r += `- BÉNÉFICE NET   : ${Math.floor(s.uNet)} FC\n`;
-        r += `- COUT RACHAT    : ${Math.floor(s.uStockCost)} FC\n\n`;
-        r += `[SECTION 2 : DÉPÔTS ET RETRAITS]\n`;
-        r += `DÉPÔTS:\n- AIRTEL: ${s.dA.u}$|${s.dA.f}F\n- VODA: ${s.dV.u}$|${s.dV.f}F\n- ORANGE: ${s.dO.u}$|${s.dO.f}F\n\n`;
-        r += `RETRAITS:\n- AIRTEL: ${s.rA.u}$|${s.rA.f}F\n- VODA: ${s.rV.u}$|${s.rV.f}F\n- ORANGE: ${s.rO.u}$|${s.rO.f}F\n\n`;
-        r += `[SECTION 3 : ÉTAT FINAL CAISSE]\n`;
-        r += `- PHYSICAL CASH : ${c.cUSD.toFixed(1)}$ | ${c.cCDF.toLocaleString()} FC\n`;
-        const blob = new Blob([r], { type: 'text/plain' });
-        const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
-        a.download = `Rapport_Cabine_${type}.txt`; a.click();
-    }
-
-    function deleteOp(id) { if(confirm("Supprimer l'opération ?")) { d.logs = d.logs.filter(l => l.id !== id); save(); } }
-    function resetAll() { if(confirm("Réinitialiser TOUT ?")) { d = { m: {}, logs: [] }; save(); location.reload(); } }
+    function closeModal() { document.getElementById('modal-overlay').style.display = 'none'; }
+    function transferProfit() { const s = calculateStats(); if(s.uNet <= 0) return alert("Pas de gain"); d.logs.push({ id: Date.now(), h: new Date().toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'}), srv: "V-GAIN", qty: 0, cash: s.uNet, curr: "FC" }); save(); }
+    function processOp() { const srv = document.getElementById('op-service').value; const qty = parseFloat(document.getElementById('op-qty').value || 0); const cash = parseFloat(document.getElementById('op-cash').value || 0); const curr = document.getElementById('op-curr').value; if(qty === 0 && cash === 0) return; d.logs.push({ id: Date.now(), h: new Date().toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'}), srv, qty, cash, curr }); save(); document.getElementById('op-qty').value=""; document.getElementById('op-cash').value=""; }
+    function resetAll() { if(confirm("Voulez-vous vraiment effacer TOUTES les données ?")) { d = { m: {}, logs: [], errors: [] }; save(); location.reload(); } }
     setInterval(() => { document.getElementById('clock').innerText = new Date().toLocaleTimeString(); }, 1000);
     window.onload = render;
-
-    // CODE POUR L'INSTALLATION (SERVICE WORKER)
-    if ('serviceWorker' in navigator) {
-        window.addEventListener('load', () => {
-            navigator.serviceWorker.register('./sw.js')
-                .then(reg => console.log('App prête !'))
-                .catch(err => console.log('Erreur:', err));
-        });
-    }
 </script>
 </body>
 </html>
