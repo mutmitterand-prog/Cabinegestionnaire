@@ -2,7 +2,7 @@
   "name": "FKM Energy Gestion",
   "short_name": "FKM Gestion",
   "description": "Système de gestion de stock et ventes",
-  "start_url": "P.html",
+  "start_url": "index.html",
   "display": "standalone",
   "background_color": "#121212",
   "theme_color": "#1a73e8",
