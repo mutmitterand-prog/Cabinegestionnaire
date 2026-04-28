@@ -465,7 +465,7 @@
     function resetAll() { if(confirm("Voulez-vous vraiment effacer TOUTES les données ?")) { d = { m: {}, logs: [], errors: [] }; save(); location.reload(); } }
     setInterval(() => { document.getElementById('clock').innerText = new Date().toLocaleTimeString(); }, 1000);
     window.onload = render;
-  
+    </script>
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
   import { getDatabase, ref, set, onValue } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
@@ -522,4 +522,4 @@
 </script>
 
 </body>
-    </html>
+</html>
