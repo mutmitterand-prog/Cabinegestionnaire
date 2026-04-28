@@ -1,24 +1,25 @@
-const CACHE_NAME = 'gestion-cabine-v1';
+const CACHE_NAME = 'fkm-energy-v1';
 const ASSETS = [
-  './',
-  './index.html',
-  './manifest.json'
+  'P.html',
+  'manifest.json',
+  'icon-192.png',
+  'icon-512.png'
 ];
 
-// Installation du Service Worker
-self.addEventListener('install', (e) => {
-  e.waitUntil(
+// Installation et mise en cache
+self.addEventListener('install', (event) => {
+  event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
       return cache.addAll(ASSETS);
     })
   );
 });
 
-// Distribution des fichiers en mode hors-ligne
-self.addEventListener('fetch', (e) => {
-  e.respondWith(
-    caches.match(e.request).then((response) => {
-      return response || fetch(e.request);
+// Stratégie : Réseau d'abord, sinon Cache (pour Firebase)
+self.addEventListener('fetch', (event) => {
+  event.respondWith(
+    fetch(event.request).catch(() => {
+      return caches.match(event.request);
     })
   );
 });
