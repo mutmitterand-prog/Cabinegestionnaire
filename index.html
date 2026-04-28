@@ -4,6 +4,33 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>OUTILS DE GESTION CABINE - V11.3 SECURE</title>
+    <script type="module">
+  // Connexion aux outils Firebase
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+  import { getDatabase, ref, set } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+
+  // Ta configuration spécifique
+  const firebaseConfig = {
+    apiKey: "AIzaSyDO-ROEq-0FpvR44mUgkO0xoSTiXKSoBno",
+    authDomain: "mut-cabine-gestion.firebaseapp.com",
+    projectId: "mut-cabine-gestion",
+    storageBucket: "mut-cabine-gestion.firebasestorage.app",
+    messagingSenderId: "634681741179",
+    appId: "1:634681741179:web:e9f3f6def7f778fe2477de",
+    databaseURL: "https://mut-cabine-gestion-default-rtdb.firebaseio.com/"
+  };
+
+  // Initialisation
+  const app = initializeApp(firebaseConfig);
+  const db = getDatabase(app);
+
+  // Fonction pour envoyer les données vers PPMCABINE
+  window.cloudSync = function(data) {
+    const path = ref(db, 'cabines/PPMCABINE');
+    set(path, data).catch(err => console.error("Erreur Sync:", err));
+  };
+</script>
+
     <style>
         :root {
             --bg: #0d1117; --card: #161b22; --border: #30363d;
@@ -502,8 +529,7 @@
 
   const app = initializeApp(firebaseConfig);
   const db = getDatabase(app);
-  const dataRef = ref(db, 'gestion_cabine');
-
+  const dataRef = ref(db, 'cabines/PPMCABINE');
   // MODIFICATION DE VOTRE FONCTION SAVE() SANS TOUCHER AU RESTE
   // On remplace la fonction save() originale par celle-ci pour envoyer vers Firebase
   window.save = function() {
