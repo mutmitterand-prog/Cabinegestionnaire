@@ -1,10 +1,12 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-    <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>OUTILS DE GESTION CABINE - V11.3 SECURE</title>
-    <style>
+   <title>OUTILS DE GESTION CABINE - V11.3 SECURE</title>
+   <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#1a73e8">
+   <style>
+
         :root {
             --bg: #0d1117; --card: #161b22; --border: #30363d;
             --text: #c9d1d9; --primary: #f0b90b; --blue: #58a6ff;
@@ -463,8 +465,7 @@
     function resetAll() { if(confirm("Voulez-vous vraiment effacer TOUTES les données ?")) { d = { m: {}, logs: [], errors: [] }; save(); location.reload(); } }
     setInterval(() => { document.getElementById('clock').innerText = new Date().toLocaleTimeString(); }, 1000);
     window.onload = render;
-</script>
-</body>
+  
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
   import { getDatabase, ref, set, onValue } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
@@ -520,4 +521,5 @@
   }
 </script>
 
-</html>
+</body>
+    </html>
