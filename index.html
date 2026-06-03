@@ -1,525 +1,1359 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
+    <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-   <title>OUTILS DE GESTION CABINE - V11.3 SECURE</title>
-   <link rel="manifest" href="manifest.json">
-    <meta name="theme-color" content="#1a73e8">
-   <style>
-
-        :root {
-            --bg: #0d1117; --card: #161b22; --border: #30363d;
-            --text: #c9d1d9; --primary: #f0b90b; --blue: #58a6ff;
-            --green: #238636; --red: #da3633; --gray: #8b949e;
+    <title>SYSTÈME DE GESTION SCOLAIRE</title>
+    <style>
+        :root { 
+            --sidebar: #1a252f; --accent: #27ae60; --bg: #f4f7f6; 
+            --danger: #e74c3c; --warning: #f39c12; --info: #3498db; --white: #ffffff;
+            --finance: #8e44ad;
         }
-        body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 10px; font-size: 0.8rem; }
-        .container { max-width: 1400px; margin: 0 auto; }
-        header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border-bottom: 1px solid var(--border); padding-bottom: 10px; }
-        .dash-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px; margin-bottom: 15px; }
-        @media (max-width: 1100px) { .dash-grid { grid-template-columns: 1fr; } }
-        .panel { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 12px; transition: 0.3s; }
-        .panel.morning { border-top: 4px solid var(--blue); }
-        .panel.current { border-top: 4px solid var(--primary); }
-        .panel.inventory { border-top: 4px solid var(--green); }
-        .panel h2 { font-size: 0.65rem; margin: 0 0 10px 0; color: var(--gray); text-transform: uppercase; letter-spacing: 1px; }
-        .stat-card { background: rgba(0,0,0,0.2); padding: 8px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.05); margin-bottom: 8px; }
-        .stat-card label { display: block; font-size: 0.55rem; color: var(--gray); margin-bottom: 3px; border-bottom: 1px solid #30363d; padding-bottom: 2px; }
-        .val { font-family: 'Roboto Mono', monospace; font-weight: bold; font-size: 0.75rem; }
-        .summary-box { background: #1c2128; border: 1px dashed var(--gray); padding: 8px; border-radius: 6px; margin-top: 5px; }
-        .summary-row { display: flex; justify-content: space-between; font-size: 0.65rem; margin-bottom: 4px; border-bottom: 1px solid #30363d; padding-bottom: 2px; font-weight: bold; }
-        .res-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 3px; }
-        .net-box { padding: 4px; background: #0d1117; border-radius: 4px; text-align: center; font-weight: bold; border: 1px solid #21262d; font-size: 0.55rem; line-height: 1.2; }
-        .main-layout { display: grid; grid-template-columns: 380px 1fr; gap: 20px; }
-        @media (max-width: 1000px) { .main-layout { grid-template-columns: 1fr; } }
-        .input-box { background: #0d1117; border: 1px solid var(--border); color: white; padding: 8px; border-radius: 6px; width: 100%; box-sizing: border-box; margin-bottom: 6px; font-size: 0.8rem; }
-        .btn { border: none; padding: 10px; border-radius: 6px; font-weight: bold; cursor: pointer; width: 100%; transition: 0.2s; margin-bottom: 5px; }
-        .btn-blue { background: #58a6ff; color: white; }
-        .btn-green { background: #238636; color: white; }
-        .btn-gray { background: #30363d; color: white; }
-        .btn-red { background: #da3633; color: white; }
-        .btn-primary { background: var(--primary); color: #000; }
-        table { width: 100%; border-collapse: collapse; font-size: 0.75rem; }
-        th { text-align: left; padding: 10px; color: var(--gray); border-bottom: 1px solid var(--border); }
-        td { padding: 10px; border-bottom: 1px solid #21262d; }
-        @keyframes blink { 50% { opacity: 0.2; } }
-        .low-stock { color: var(--red) !important; animation: blink 1s infinite; font-weight: 900; }
-        .admin-only { display: none; }
-        .is-admin .admin-only { display: block !important; }
-        .locked { opacity: 0.6; pointer-events: none; filter: grayscale(1); }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', sans-serif; }
+        body { display: flex; height: 100vh; background: var(--bg); overflow: hidden; }
 
-        #modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); display: none; justify-content: center; align-items: center; z-index: 1000; }
-        .modal-content { background: white; color: black; border-radius: 8px; width: 95%; max-width: 800px; height: 95vh; display: flex; flex-direction: column; overflow: hidden; }
-        .report-preview { flex-grow: 1; padding: 20px; overflow-y: auto; background: white; }
-        @media print { .no-print { display: none !important; } .modal-content { height: auto; width: 100%; } }
+        /* OVERLAYS ET CONNEXION */
+        #loginOverlay, #financeOverlay { position: fixed; inset: 0; background: var(--sidebar); z-index: 9999; display: flex; align-items: center; justify-content: center; flex-direction: column; color: white; }
+        #financeOverlay { background: rgba(26, 37, 47, 0.98); display: none; }
+        .login-box { background: rgba(255,255,255,0.1); padding: 30px; border-radius: 15px; backdrop-filter: blur(10px); text-align: center; width: 350px; border: 1px solid rgba(255,255,255,0.2); box-shadow: 0 10px 25px rgba(0,0,0,0.3); }
+
+        /* APERÇU MANUEL (MODALE) */
+        #previewOverlay { 
+            position: fixed; inset: 0; background: rgba(0,0,0,0.85); 
+            z-index: 10000; display: none; align-items: flex-start; justify-content: center; 
+            overflow-y: auto; padding: 40px 20px; 
+        }
+        .preview-content { background: white; width: 100%; max-width: 600px; padding: 0; border-radius: 8px; box-shadow: 0 15px 35px rgba(0,0,0,0.5); }
+        .preview-footer { padding: 20px; background: #f8f9fa; display: flex; gap: 10px; justify-content: center; border-bottom-left-radius: 8px; border-bottom-right-radius: 8px; }
+
+        /* BARRE LATERALE */
+        nav { width: 260px; background: var(--sidebar); color: white; padding: 20px 0; display: flex; flex-direction: column; flex-shrink: 0; }
+        .nav-logo { text-align: center; margin-bottom: 20px; padding: 10px; border-bottom: 1px solid rgba(255,255,255,0.1); }
+        .nav-logo div { width: 50px; height: 50px; background: var(--accent); border-radius: 50%; margin: 0 auto 10px; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 1.2rem; }
+        nav h2 { text-align: center; color: var(--accent); margin-bottom: 20px; font-size: 1.1rem; text-transform: uppercase; padding: 0 10px; }
+        .nav-item { padding: 15px 25px; cursor: pointer; border-left: 4px solid transparent; transition: 0.3s; font-size: 0.9rem; display: flex; align-items: center; gap: 10px; }
+        .nav-item:hover, .nav-item.active { background: #2c3e50; border-left-color: var(--accent); }
+        .nav-item.finance-btn { color: #d487ff; font-weight: bold; border-left-color: var(--finance); }
+        
+        /* CONTENU PRINCIPAL */
+        main { flex: 1; padding: 25px; overflow-y: auto; }
+        .stats-grid { display: none; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 25px; }
+        .stat-card { background: white; padding: 15px; border-radius: 8px; border-bottom: 4px solid var(--accent); box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+        .stat-card h4 { font-size: 0.8rem; color: #7f8c8d; text-transform: uppercase; margin-bottom: 5px; }
+        .stat-card p { font-size: 1.4rem; font-weight: bold; color: #2c3e50; }
+
+        .card { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); margin-bottom: 20px; }
+        .form-group { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 15px; align-items: center; }
+        input, select { padding: 10px; border: 1px solid #ddd; border-radius: 5px; flex: 1; min-width: 150px; outline: none; }
+
+        /* TABLEAUX */
+        table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+        th, td { padding: 12px 10px; text-align: left; border-bottom: 1px solid #eee; font-size: 0.85rem; }
+        th { background: #f8f9fa; color: #555; text-transform: uppercase; font-size: 0.75rem; }
+
+        /* BOUTONS */
+        button { padding: 8px 12px; border-radius: 5px; border: none; cursor: pointer; font-weight: bold; color: white; transition: 0.2s; }
+        .btn-main { background: var(--accent); }
+        .btn-del { background: var(--danger); }
+        .btn-print { background: var(--warning); }
+        .btn-info { background: var(--info); }
+        .btn-finance { background: var(--finance); }
+
+        /* STYLE REÇU / RAPPORT (FEUILLE BLANCHE) */
+        .receipt-box { border: 2px solid #000; padding: 30px; width: 100%; color: #000; background: #fff; position: relative; }
+        .receipt-header { text-align: center; border-bottom: 2px solid #000; margin-bottom: 20px; padding-bottom: 15px; }
+        .receipt-row { display: flex; justify-content: space-between; margin: 10px 0; font-size: 1.1rem; }
+        .validity-badge { border: 2px dashed #000; padding: 10px; margin-top: 20px; text-align: center; font-family: monospace; font-weight: bold; font-size: 1.1rem; background: #f9f9f9; }
+
+        .finance-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px; }
+
+        @media print {
+            body * { visibility: hidden; }
+            #printZone, #printZone * { visibility: visible; }
+            #printZone { position: fixed; left: 0; top: 0; width: 100%; height: 100%; display: block !important; padding: 0; margin: 0; background: white; }
+            #previewOverlay { background: white !important; display: block !important; }
+            .no-print { display: none !important; }
+        }
+        
+        .check-group { display: flex; gap: 15px; background: #f9f9f9; padding: 10px; border-radius: 5px; width: 100%; border: 1px solid #ddd; }
+        .check-item { display: flex; align-items: center; gap: 5px; font-size: 0.85rem; color: #333; }
+        
+        /* Styles pour les sections d'historique subdivisées */
+        .hist-sub-title { font-weight: bold; font-size: 0.8rem; background: #eee; padding: 5px; margin-top: 10px; text-transform: uppercase; color: #555; }
     </style>
 </head>
-<body id="main-body">
+<body>
 
-<div id="modal-overlay">
-    <div class="modal-content">
-        <div style="padding: 10px; background: #222; color: white; display: flex; justify-content: space-between; align-items: center;" class="no-print">
-            <b>PRÉVISUALISATION DU RAPPORT</b>
-            <button onclick="closeModal()" style="background:#da3633; color:white; border:none; padding:5px 10px; cursor:pointer;">X</button>
-        </div>
-        <div id="report-to-print" class="report-preview"></div>
-        <div style="padding: 15px; background: #f8f9fa; text-align: right; border-top: 1px solid #ddd;" class="no-print">
-            <button class="btn btn-green" style="width:200px" onclick="window.print()">IMPRIMER / SAUVER PDF</button>
-        </div>
-    </div>
-</div>
-
-<div class="container">
-    <header>
-        <div style="font-weight: 900; font-size: 1.2rem; text-transform: uppercase;">GESTION <span style="color:var(--primary)">CABINE</span></div>
-        <div style="display:flex; align-items:center; gap:10px;">
-            <button id="auth-btn" onclick="toggleAuth()" style="background:var(--border); color:white; border:1px solid var(--gray); padding:5px 12px; border-radius:20px; font-size:0.6rem; cursor:pointer;">🔒 MODE: STAFF</button>
-            <div id="clock" style="font-family: monospace; color: var(--gray);">00:00:00</div>
-        </div>
-    </header>
-
-    <div class="dash-grid">
-        <div class="panel morning" id="panel-morning">
-            <h2>☀️ INITIAL MATIN</h2>
-            <div class="stat-card"><label>CASH MATIN</label><div id="m-cash" class="val">---</div></div>
-            <div class="stat-card"><label>MOMO TOTAL MATIN</label><div id="m-momo-total" class="val">---</div></div>
-            <div style="font-size: 0.55rem; color: var(--gray);">Units: <span id="m-units">---</span></div>
-        </div>
-
-        <div class="panel current">
-            <h2>📊 RÉSUMÉ ET BÉNÉFICES</h2>
-            <div class="summary-box">
-                <div class="summary-row" style="color:var(--primary); font-size: 0.75rem;">BÉNÉFICE NET <span id="g-u-net">SÉCURISÉ</span></div>
-                <div class="summary-row" style="color:var(--text); opacity: 0.8;">COUT RACHAT STOCK <span id="g-u-stock-cost">0 FC</span></div>
-                <hr style="border: 0; border-top: 1px solid var(--border); margin: 5px 0;">
-                <div class="summary-row" style="color:var(--blue)">UNITÉS (TOTAL) <span id="g-total-units-cash">0 FC</span></div>
-                <div id="g-detail-units-cash" style="font-size: 0.52rem; color: var(--gray); padding-bottom: 5px;">A:0 | O:0 | Af:0 | V:0$</div>
-                <div class="summary-row" style="color:var(--green)">DÉPÔTS <span id="g-total-dep">0$ | 0F</span></div>
-                <div id="g-detail-dep" style="font-size: 0.52rem; color: var(--gray); padding-bottom: 5px;">A:0$|0F V:0$|0F O:0$|0F</div>
-                <div class="summary-row" style="color:var(--red)">RETRAITS <span id="g-total-ret">0$ | 0F</span></div>
-                <div id="g-detail-ret" style="font-size: 0.52rem; color: var(--gray);">A:0$|0F V:0$|0F O:0$|0F</div>
+    <div id="previewOverlay">
+        <div class="preview-content">
+            <div id="printZone">
+                <div id="recuContent"></div>
+                <div id="rapportContent"></div>
             </div>
-            <button class="btn btn-primary admin-only" style="font-size: 0.65rem; margin-top: 5px;" onclick="transferProfit()">VERSER GAIN DANS CASH</button>
-            <div class="stat-card" style="margin-top:10px;"><label>CASH RÉEL EN CAISSE</label><div id="now-cash" class="val" style="color:var(--primary); font-size: 0.9rem;">---</div></div>
-        </div>
-
-        <div class="panel inventory">
-            <h2>📦 STOCK DISPO (VIRTUEL)</h2>
-            <div style="margin-bottom:8px">
-                <div class="res-grid" style="grid-template-columns: repeat(4, 1fr);">
-                    <div class="net-box"><div style="color:var(--blue)">AIR</div><span id="s-ua">0</span></div>
-                    <div class="net-box"><div style="color:var(--primary)">ORA</div><span id="s-uo">0</span></div>
-                    <div class="net-box"><div style="color:var(--text)">AFR</div><span id="s-uaf">0</span></div>
-                    <div class="net-box"><div style="color:var(--green)">VOD</div><span id="s-uv">0</span>$</div>
-                </div>
-            </div>
-            <label style="font-size:0.55rem; color:var(--gray)">SOLDE MOMO REEL</label>
-            <div class="res-grid">
-                <div class="net-box" id="s-air-momo"><div style="color:var(--blue)">AIRTEL</div>0$ / 0F</div>
-                <div class="net-box" id="s-vod-momo"><div style="color:var(--green)">VODA</div>0$ / 0F</div>
-                <div class="net-box" id="s-ora-momo"><div style="color:var(--primary)">ORANGE</div>0$ / 0F</div>
+            <div class="preview-footer no-print">
+                <button class="btn-main" style="padding:15px 30px; font-size:1rem;" onclick="window.print()">🖨️ IMPRIMER / PDF</button>
+                <button class="btn-del" style="padding:15px 30px; font-size:1rem;" onclick="fermerApercu()">❌ FERMER</button>
             </div>
         </div>
     </div>
 
-    <div class="main-layout">
-        <aside>
-            <div class="panel morning" id="init-form" style="margin-bottom:15px; border-left: 4px solid var(--blue);">
-                <h2>🚀 OUVERTURE SESSION</h2>
-                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:5px;"><input type="number" id="i-cash-usd" class="input-box" placeholder="Cash $"><input type="number" id="i-cash-cdf" class="input-box" placeholder="Cash FC"></div>
-                <div style="display:grid; grid-template-columns: repeat(4, 1fr); gap:4px;"><input type="number" id="i-ua" class="input-box" placeholder="U-A"><input type="number" id="i-uo" class="input-box" placeholder="U-O"><input type="number" id="i-uaf" class="input-box" placeholder="U-Af"><input type="number" id="i-uv" class="input-box" placeholder="U-V$"></div>
-                <div style="display:grid; grid-template-columns: 1fr 1.5fr; gap:5px;">
-                    <input type="number" id="i-ma-usd" class="input-box" placeholder="Airtel $"><input type="number" id="i-ma-cdf" class="input-box" placeholder="Airtel FC">
-                    <input type="number" id="i-mv-usd" class="input-box" placeholder="Voda $"><input type="number" id="i-mv-cdf" class="input-box" placeholder="Voda FC">
-                    <input type="number" id="i-mo-usd" class="input-box" placeholder="Orange $"><input type="number" id="i-mo-cdf" class="input-box" placeholder="Orange FC">
+    <div id="loginOverlay">
+        <div class="login-box">
+            <h2 id="loginSchoolName">🔐 CHARGEMENT...</h2>
+            <input type="password" id="pinInput" placeholder="Code PIN" style="width: 100%; text-align: center; margin: 15px 0; font-size: 1.2rem;">
+            <button class="btn-main" onclick="checkLogin()" style="width: 100%; padding: 12px;">OUVRIR LA SESSION</button>
+        </div>
+    </div>
+
+    <div id="financeOverlay">
+        <div class="login-box">
+            <h2 style="color: #d487ff;" id="overlayTitle">🔑 DIRECTION</h2>
+            <p style="margin-bottom: 15px; font-size: 0.8rem;">Entrez le mot de passe Administrateur</p>
+            <input type="password" id="adminPassInput" placeholder="Mot de passe" style="width: 100%; text-align: center; margin-bottom: 15px;">
+            <div style="display: flex; gap: 10px; width: 100%;">
+                <button class="btn-del" onclick="closeFinance()" style="flex:1">RETOUR</button>
+                <button class="btn-finance" onclick="checkAdminAccess()" style="flex:1">VALIDER</button>
+            </div>
+        </div>
+    </div>
+
+    <nav>
+        <div class="nav-logo">
+            <div id="logoInitial">E</div>
+            <h2 id="navSchoolName">ÉCOLE</h2>
+        </div>
+        <div class="nav-item active" onclick="showSection('eleves', this); showSubSection('sub-nouveau')">👤 Inscriptions</div>
+        <div class="nav-item" onclick="showSection('paiements', this)">💰 Minerval & FC</div>
+        <div class="nav-item" onclick="showSection('personnel', this)">👔 Staff & Salaires</div>
+        <div class="nav-item finance-btn" onclick="askSecurity('finance', this)">📊 Rapport Finance</div>
+        <div class="nav-item" onclick="showSection('rapports-eleves', this)">📋 Rapports Élèves</div>
+        <div class="nav-item" onclick="askSecurity('config', this)">⚙️ Configuration</div>
+        <div style="margin-top: auto; padding: 20px;">
+            <p id="displayTauxNav" style="font-size: 0.7rem; color: #95a5a6; margin-bottom: 10px;">Taux: 1$ = 2250 FC</p>
+            <button onclick="resetApp()" style="background:#444; width:100%; font-size: 0.7rem; opacity: 0.5;">RÉINITIALISER TOUT</button>
+        </div>
+    </nav>
+
+    <main>
+        <div class="stats-grid">
+            <div class="stat-card"><h4>Effectif Total</h4><p id="statTotalEleves">0</p></div>
+            <div class="stat-card" style="border-color:var(--warning)"><h4>Recettes (Mois)</h4><p id="statRecettes">0 $</p></div>
+            <div class="stat-card" style="border-color:var(--finance)"><h4>Caisse Net</h4><p id="statCaisse">0 $</p></div>
+            <div class="stat-card" style="border-color:var(--info)"><h4>Taux</h4><p id="statTaux">2250 FC</p></div>
+        </div>
+        
+        <section id="eleves" class="section">
+            <div style="display: flex; gap: 10px; margin-bottom: 20px;">
+                <button class="btn-main" onclick="showSubSection('sub-nouveau')">➕ Nouveau</button>
+                <button class="btn-info" onclick="showSubSection('sub-ancien')">🔄 Ancien (Réinscription)</button>
+                <button class="btn-finance" onclick="showSubSection('sub-gestion')">⚙️ Gestion</button>
+            </div>
+
+            <div id="sub-nouveau" class="sub-section" style="display: flex; gap: 20px; align-items: flex-start;">
+                <div class="card" style="flex: 2;">
+                    <h3 id="formTitleEleve">Fiche d'Inscription Complète</h3>
+                    <div class="form-group" style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                        <input type="text" id="nom" placeholder="Nom">
+                        <input type="text" id="postnom" placeholder="Post-nom">
+                        <input type="text" id="prenom" placeholder="Prénom">
+                        <select id="sexeEleve">
+                            <option value="">-- Sexe --</option>
+                            <option value="M">Masculin (M)</option>
+                            <option value="F">Féminin (F)</option>
+                        </select>
+                        <input type="text" id="nationalite" placeholder="Nationalité" value="Congolaise">
+                        <input type="text" id="lieuNaiss" placeholder="Lieu de naissance">
+                        <input type="date" id="dateNaiss" title="Date de naissance">
+                        <select id="classeSelect"></select>
+                        
+                        <input type="text" id="nomPere" placeholder="Nom du Père">
+                        <input type="text" id="telPere" placeholder="Tél. Père">
+                        <input type="text" id="nomMere" placeholder="Nom de la Mère">
+                        <input type="text" id="telMere" placeholder="Tél. Mère">
+                        
+                        <input type="number" id="tarifIndiv" placeholder="Tarif Admis $">
+                        <button id="btnSaveEleve" class="btn-main" onclick="ajouterEleve()" style="grid-column: span 2; padding: 12px;">ENREGISTRER L'ÉLÈVE</button>
+                    </div>
                 </div>
-                <button class="btn btn-blue" id="btn-session" onclick="setDailyInit()">LANCER LA SESSION</button>
-            </div>
 
-            <div class="panel" style="margin-bottom:15px; border-left: 4px solid var(--green);">
-                <h2>➕ ACTION / OPÉRATION</h2>
-                <select id="op-service" class="input-box" onchange="toggleSync()">
-                    <optgroup label="UNITÉS"><option value="U-Airtel">Unit Airtel</option><option value="U-Orange">Unit Orange</option><option value="U-Afri">Unit Africell</option><option value="U-Voda">Unit Vodacom $</option></optgroup>
-                    <optgroup label="MOBILE MONEY"><option value="M-AIR-D">Airtel Dépôt</option><option value="M-AIR-R">Airtel Retrait</option><option value="M-VOD-D">Voda Dépôt</option><option value="M-VOD-R">Voda Retrait</option><option value="M-ORA-D">Orange Dépôt</option><option value="M-ORA-R">Orange Retrait</option></optgroup>
-                    <optgroup label="RÉAPPRO STOCK (+)">
-                        <option value="R-CASH-USD">Réappro Cash $</option><option value="R-CASH-CDF">Réappro Cash FC</option>
-                        <option value="R-UA">Réappro Unit Airtel</option><option value="R-UO">Réappro Unit Orange</option>
-                        <option value="R-UAF">Réappro Unit Afri</option><option value="R-UV">Réappro Unit Voda $</option>
-                        <option value="R-MA">Réappro Airtel Money</option><option value="R-MV">Réappro M-Pesa</option><option value="R-MO">Réappro Orange Money</option>
-                    </optgroup>
-                    <option value="CHANGE">Change Money</option>
-                </select>
-                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
-                    <input type="number" id="op-qty" step="0.01" class="input-box" placeholder="Valeur" oninput="autoCalc()">
-                    <input type="number" id="op-cash" class="input-box" placeholder="Cash Reçu">
+                <div class="card" style="flex: 1.5; max-height: 550px; overflow-y: auto;">
+                    <h3>Visualisation Rapide</h3>
+                    <input type="text" id="searchQuick" placeholder="Rechercher nom..." oninput="chargerListeRapide()" style="width: 100%; margin-bottom: 10px; font-size: 0.8rem;">
+                    <table style="font-size: 0.75rem;">
+                        <thead>
+                            <tr><th>ID / Matricule</th><th>Nom Complet</th><th>Classe</th><th>Sexe</th></tr>
+                        </thead>
+                        <tbody id="bodyQuickList"></tbody>
+                    </table>
                 </div>
-                <select id="op-curr" class="input-box" onchange="autoCalc()"><option value="CDF">Francs (FC)</option><option value="USD">Dollars ($)</option></select>
-                <button class="btn btn-green" onclick="processOp()">VALIDER</button>
             </div>
 
-            <div class="panel">
-                <h2>📥 RAPPORTS</h2>
-                <button class="btn btn-primary admin-only" onclick="generateDetailedPDF()">📄 GÉNÉRER RAPPORT PDF</button>
-                <button class="btn btn-red admin-only" style="font-size:0.6rem; margin-top:10px;" onclick="resetAll()">⚠️ RÉINITIALISER TOUT</button>
+            <div id="sub-ancien" class="sub-section card" style="display:none;">
+                <h3>Réinscription (Anciens Élèves)</h3>
+                <div class="form-group">
+                    <select id="filtreAncienClasse" onchange="chargerAnciens()">
+                        <option value="">-- Choisir l'ancienne classe --</option>
+                    </select>
+                </div>
+                <table id="tableAnciens">
+                    <thead><tr><th>Nom Comp</th><th>Ancienne Classe</th><th>Action</th></tr></thead>
+                    <tbody></tbody>
+                </table>
             </div>
-        </aside>
 
-        <section>
-            <div class="panel">
-                <h2>📜 HISTORIQUE RÉCENT</h2>
-                <div style="max-height: 550px; overflow-y: auto;">
-                    <table>
-                        <thead><tr><th>Heure</th><th>Service</th><th>Qté</th><th>Cash</th><th></th></tr></thead>
-                        <tbody id="log-body"></tbody>
+            <div id="sub-gestion" class="sub-section card" style="display:none;">
+                <h3>Gestion & Modifications</h3>
+                <div class="form-group">
+                    <input type="text" id="searchEleve" placeholder="Rechercher un élève..." oninput="chargerElevesGestion()">
+                </div>
+                <table id="tableElevesGestion">
+                    <thead><tr><th>Matricule</th><th>Nom Complet</th><th>Action</th></tr></thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </section> 
+
+        <section id="paiements" class="section" style="display:none;">
+            <div style="display: flex; gap: 10px; margin-bottom: 20px;">
+                <button class="btn-main" onclick="showSubPaiement('sub-encaissement')">💰 Encaissement Élève</button>
+                <button class="btn-finance" onclick="showSubPaiement('sub-autres-mouvements')">🔄 Autres Entrées / Dépenses</button>
+            </div>
+
+            <div class="card" style="background: #fff8e1; border: 1px solid #ffca28; margin-bottom: 15px; padding: 10px;">
+                <div class="form-group" style="margin-bottom:0;">
+                    <span style="font-weight:bold; font-size:0.8rem;">🔍 VÉRIFIER UN REÇU :</span>
+                    <input type="text" id="refCheckInput" placeholder="N° de Référence (REC-...)">
+                    <button class="btn-info" onclick="verifierRecu()">VÉRIFIER</button>
+                </div>
+                <div id="verifResult" style="font-size: 0.8rem; margin-top: 5px; font-weight: bold;"></div>
+            </div>
+
+            <div id="sub-encaissement" class="sub-section-paiement" style="display: flex; gap: 20px;">
+                <div class="card" style="flex: 1.5;">
+                    <h3>📥 Nouvel Encaissement</h3>
+                    <div class="form-group" style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                        <div style="grid-column: span 2;">
+                            <label>Élève (Recherche ou Code-barre)</label>
+                            <input type="text" id="searchPayeEleve" list="listeElevesPaye" placeholder="Scanner ou taper le nom..." onchange="autoFillEleve(this.value)">
+                            <datalist id="listeElevesPaye"></datalist>
+                        </div>
+                        <input type="text" id="payeClasse" placeholder="Classe" readonly style="background: #eee;">
+                        <input type="date" id="payeDate">
+                        
+                        <select id="payeMotif" style="grid-column: span 2;" onchange="toggleAutreMotifField(); declencherCalculSituationDynamique()">
+                            <optgroup label="Mensualités (Minerval)">
+                                <option value="Septembre">Septembre</option><option value="Octobre">Octobre</option>
+                                <option value="Novembre">Novembre</option><option value="Décembre">Décembre</option>
+                                <option value="Janvier">Janvier</option><option value="Février">Février</option>
+                                <option value="Mars">Mars</option><option value="Avril">Avril</option>
+                                <option value="Mai">Mai</option><option value="Juin">Juin</option>
+                            </optgroup>
+                            <optgroup label="Frais de l'État">
+                                <option value="Tranche 1">1ère Tranche (État)</option>
+                                <option value="Tranche 2">2ème Tranche (État)</option>
+                                <option value="Tranche 3">3ème Tranche (État)</option>
+                            </optgroup>
+                            <option value="Accessoires">Accessoires (Cochez ci-dessous)</option>
+                            <option value="Autres">Autres paiements</option>
+                        </select>
+
+                        <div id="autreMotifContainer" style="grid-column: span 2; display: none;">
+                            <input type="text" id="autreMotif" placeholder="Motif du paiement (Ex: Excursion, Bibliothèque...)" oninput="declencherCalculSituationDynamique()">
+                        </div>
+
+                        <div class="check-group" style="grid-column: span 2;">
+                            <label class="check-item"><input type="checkbox" class="acc-check" value="Uniforme"> Uniforme</label>
+                            <label class="check-item"><input type="checkbox" class="acc-check" value="Journal"> Journal de classe</label>
+                            <label class="check-item"><input type="checkbox" class="acc-check" value="Insigne"> Insigne</label>
+                        </div>
+
+                        <div style="grid-column: span 2; display: flex; gap: 10px;">
+                            <input type="number" id="payeMontant" placeholder="Montant">
+                            <select id="payeDevise" style="max-width: 100px;">
+                                <option value="USD">USD</option>
+                                <option value="CDF">CDF</option>
+                            </select>
+                        </div>
+                        <button class="btn-main" onclick="validerPaiement()" style="grid-column: span 2; padding: 15px;">VOIR L'APERÇU DU REÇU</button>
+                    </div>
+                </div>
+
+                <div class="card" style="flex: 1; border-left: 4px solid #3498db; max-height: 550px; overflow-y: auto;">
+                    <h3>📋 SITUATION DE L'ÉLÈVE</h3>
+                    <div id="statutPaiementRapide" style="margin-bottom: 15px; font-size: 0.85rem; padding: 10px; background: #f8f9fa; border-radius: 5px;">
+                        Sélectionnez un élève pour voir son historique.
+                    </div>
+                    
+                    <div id="historiqueSubdiviseConteneur">
+                        <table style="font-size: 0.8rem;">
+                            <thead><tr><th>Date</th><th>Motif</th><th>Montant</th><th>Reçu</th></tr></thead>
+                            <tbody id="historiqueEleveBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <div id="sub-autres-mouvements" class="sub-section-paiement" style="display: none;">
+                <div class="finance-grid">
+                    <div class="card" style="border-top: 4px solid #27ae60;">
+                        <h3>🟢 Autres Entrées</h3>
+                        <div class="form-group">
+                            <input type="text" id="entreeLibelle" placeholder="Source">
+                            <input type="number" id="entreeMontant" placeholder="Montant $">
+                            <button class="btn-main" onclick="ajouterMouvement('ENTREE')" style="width: 100%;">Enregistrer l'Entrée</button>
+                        </div>
+                    </div>
+                    <div class="card" style="border-top: 4px solid #e74c3c;">
+                        <h3>🔴 Dépenses & Sorties</h3>
+                        <div class="form-group">
+                            <input type="text" id="depenseLibelle" placeholder="Motif">
+                            <input type="number" id="depenseMontant" placeholder="Montant $">
+                            <button class="btn-del" onclick="ajouterMouvement('SORTIE')" style="width: 100%;">Enregistrer la Sortie</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+
+        <section id="personnel" class="section" style="display:none;">
+            <div class="card">
+                <h3>Paie du Personnel & Avances</h3>
+                <div class="form-group" style="background:#f1f9f5; padding:15px; border-radius:8px; border:1px dashed var(--accent);">
+                    <input type="text" id="staffNom" placeholder="Nom complet">
+                    <input type="text" id="staffFonction" placeholder="Fonction (Ex: Prof de Bio, Préfet, Ménagère...)">
+                    <input type="number" id="staffSalaire" placeholder="Salaire de base $">
+                    <button class="btn-main" onclick="ajouterStaff()">Ajouter au Staff</button>
+                </div>
+                <table id="tableStaff">
+                    <thead><tr><th>Nom</th><th>Fonction</th><th>Salaire ($)</th><th>Avances</th><th>Net à Payer</th><th>Action</th></tr></thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </section>
+
+        <section id="finance" class="section" style="display:none;">
+            <div class="card" style="border-left: 5px solid var(--finance); display:flex; justify-content:space-between; align-items:center;">
+                <h2 style="color: var(--finance);">📊 RAPPORT FINANCIER GÉNÉRAL</h2>
+                <button class="btn-print" onclick="imprimerRapport()">Imprimer Rapport</button>
+            </div>
+            <div class="finance-grid">
+                <div class="card">
+                    <h3>💵 Recettes Globales Ventilées</h3>
+                    <div id="financeRecettesMois" style="max-height: 250px; overflow-y: auto; margin-bottom:10px; font-size:0.9rem; space-y: 5px;"></div>
+                    <div style="border-top:1px solid #eee; padding-top:10px; font-weight:bold;">
+                        <p>Total Recettes Scolaires Éléves : <span id="finTotalMinerval">0</span> $</p>
+                    </div>
+                </div>
+                <div class="card">
+                    <h3>📉 Sorties & Salaires</h3>
+                    <p>Masse Salariale Mensuelle : <b id="finMasseSal">0</b> $</p>
+                    <p>Avances payées : <b id="finTotalAvances" style="color:var(--danger)">0</b> $</p>
+                    <p>Reste à payer : <b id="finResteStaff">0</b> $</p>
+                </div>
+            </div>
+            <div class="bilan-net" style="margin-bottom: 20px;">
+                <p>Liquidité Disponible (Net en Caisse)</p>
+                <div id="finBilanNet" style="font-size: 3.5rem; font-weight: 800; color: var(--accent); margin:10px 0;">0 $</div>
+                <p id="finBilanFC" style="font-size:1.3rem;">0 FC</p>
+            </div>
+
+            <div class="card">
+                <h3>📜 Historique des Mouvements de Caisse (Entrées/Sorties Diverses)</h3>
+                <div style="max-height: 250px; overflow-y: auto;">
+                    <table id="tableMouvements">
+                        <thead>
+                            <tr><th>Date</th><th>Type</th><th>Motif</th><th>Montant</th><th>Réf.</th><th>Action</th></tr>
+                        </thead>
+                        <tbody id="bodyMouvements"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="card">
+                <h3>📋 Historique Général des Paiements Staff</h3>
+                <div style="max-height: 250px; overflow-y: auto;">
+                    <table id="tableHistoriqueStaffGlobal">
+                        <thead>
+                            <tr><th>Date</th><th>Employé</th><th>Mois/Motif</th><th>Type</th><th>Montant</th><th>Reste dû pour ce motif</th></tr>
+                        </thead>
+                        <tbody id="bodyHistoriqueStaffGlobal"></tbody>
                     </table>
                 </div>
             </div>
         </section>
-    </div>
-</div>
+
+        <section id="rapports-eleves" class="section" style="display:none;">
+            <div class="card">
+                <h3>📋 Rapports des Élèves en Ordre</h3>
+                <div class="form-group" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px;">
+                    <div>
+                        <label style="font-size: 0.8rem; font-weight: bold;">Classe :</label>
+                        <select id="repClasseSelect" onchange="genererRapportElevesOrdre()"></select>
+                    </div>
+                    <div>
+                        <label style="font-size: 0.8rem; font-weight: bold;">Mois / Tranche :</label>
+                        <select id="repMoisSelect" onchange="genererRapportElevesOrdre()">
+                            <option value="Septembre">Septembre</option><option value="Octobre">Octobre</option>
+                            <option value="Novembre">Novembre</option><option value="Décembre">Décembre</option>
+                            <option value="Janvier">Janvier</option><option value="Février">Février</option>
+                            <option value="Mars">Mars</option><option value="Avril">Avril</option>
+                            <option value="Mai">Mai</option><option value="Juin">Juin</option>
+                            <option value="Tranche 1">1ère Tranche (État)</option>
+                            <option value="Tranche 2">2ème Tranche (État)</option>
+                            <option value="Tranche 3">3ème Tranche (État)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label style="font-size: 0.8rem; font-weight: bold;">Type Filtre :</label>
+                        <select id="repTypeSelect" onchange="genererRapportElevesOrdre()">
+                            <option value="Ordre">Élèves En Ordre</option>
+                            <option value="Dette">Élèves Insolvables (Dette)</option>
+                        </select>
+                    </div>
+                    <div style="display:flex; align-items:flex-end;">
+                        <button class="btn-print" onclick="imprimerRapportEleves()" style="width:100%; padding:10px;">🖨️ IMPRIMER LA LISTE</button>
+                    </div>
+                </div>
+                <div style="max-height: 400px; overflow-y: auto;">
+                    <table id="tableRapportEleves">
+                        <thead>
+                            <tr><th>Matricule</th><th>Nom Complet</th><th>Classe</th><th>Statut</th></tr>
+                        </thead>
+                        <tbody id="bodyRapportEleves"></tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <section id="config" class="section" style="display:none;">
+            <div class="card" style="background: #e1f5fe;">
+                <h3>🏫 Coordonnées de l'École</h3>
+                <div class="form-group">
+                    <input type="text" id="schoolNameInput" placeholder="Nom de l'école">
+                    <input type="text" id="schoolAddress" placeholder="Adresse complète">
+                    <input type="text" id="schoolPhone" placeholder="Téléphones">
+                    <button class="btn-info" onclick="sauverCoords()">Enregistrer les infos</button>
+                </div>
+            </div>
+            <div class="card">
+                <h3>⚙️ Taux & Sécurité</h3>
+                <div class="form-group">
+                    <label>Taux Actuel : 1$ = </label><input type="number" id="tauxInput">
+                    <button class="btn-main" onclick="changerTaux()">Mettre à jour</button>
+                </div>
+                <div class="finance-grid">
+                    <div style="background:#f9f9f9; padding:15px; border-radius:10px;">
+                        <h4>🔐 Modifier PIN</h4>
+                        <input type="password" id="oldPin" placeholder="Ancien PIN">
+                        <input type="password" id="newPin" placeholder="Nouveau PIN">
+                        <input type="password" id="confirmPin" placeholder="Confirmer">
+                        <button class="btn-info" onclick="changerPinSecurise()" style="width:100%;">Valider</button>
+                    </div>
+                    <div style="background:#f9f9f9; padding:15px; border-radius:10px;">
+                        <h4>🔑 Pass Admin</h4>
+                        <input type="password" id="oldAdmin" placeholder="Ancien Pass">
+                        <input type="password" id="newAdmin" placeholder="Nouveau Pass">
+                        <input type="password" id="confirmAdmin" placeholder="Confirmer">
+                        <button class="btn-finance" onclick="changerAdminSecurise()" style="width:100%;">Valider</button>
+                    </div>
+                </div>
+            </div>
+            <div class="card">
+                <h3>Gestion des Classes</h3>
+                <div class="form-group">
+                    <select id="newClassCat">
+                        <option value="1">MATERNELLE</option><option value="2">PRIMAIRE</option><option value="3">SECONDAIRE</option>
+                    </select>
+                    <input type="text" id="newClassName" placeholder="Classe">
+                    <input type="number" id="newClassTarif" placeholder="Prix $">
+                    <button class="btn-main" onclick="ajouterClasse()">Ajouter</button>
+                </div>
+                <table id="tableConfigClasses"><thead><tr><th>Cycle</th><th>Classe</th><th>Prix ($)</th><th>Action</th></tr></thead><tbody></tbody></table>
+            </div>
+        </section>
+    </main>
+
+    <script>
+    // --- 1. BASE DE DONNÉES & VARIABLES ---
+    let matriculeCount = Number(localStorage.getItem('t2_mat_count')) || 1;
+    let currentPin = localStorage.getItem('t2_pin') || "1234";
+    let adminPass = localStorage.getItem('t2_admin') || "1234";
+    let tauxChange = Number(localStorage.getItem('t2_taux')) || 2250;
+    let schoolData = JSON.parse(localStorage.getItem('t2_sdata')) || { name: "C.S. LE TREMPLIN 2", addr: "Lubumbashi, RDC", tel: "0" };
+    let classes = JSON.parse(localStorage.getItem('t2_classes')) || [{cat: 2, nom: "1ère Primaire", tarif: 50}];
+    let eleves = JSON.parse(localStorage.getItem('t2_eleves')) || [];
+    let staff = JSON.parse(localStorage.getItem('t2_staff')) || [];
+    let tousLesPaiements = JSON.parse(localStorage.getItem('t2_paiements_all')) || [];
+    let autresMouvements = JSON.parse(localStorage.getItem('t2_autres_mouv')) || [];
+    let targetSection = ""; 
+    let targetBtn = null;
+
+    // --- 2. AUTHENTIFICATION ---
+    function checkLogin() {
+        if(document.getElementById('pinInput').value === currentPin) {
+            document.getElementById('loginOverlay').style.display='none';
+            init();
+        } else { alert("Code PIN incorrect."); }
+    }
+
+    function init() {
+        updateSchoolUI(); remplirSelects(); refreshUI();
+        document.getElementById('tauxInput').value = tauxChange;
+    }
+
+    // --- 3. NAVIGATION ---
+    function showSection(id, btn) { 
+        document.querySelectorAll('.section').forEach(s => s.style.display = 'none'); 
+        document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active')); 
+        document.getElementById(id).style.display = 'block'; 
+        if(btn) btn.classList.add('active'); 
+        
+        // GESTION STATS GRID (VISIBILITÉ EXCLUSIVE AU RAPPORT FINANCIER)
+        document.querySelector('.stats-grid').style.display = (id === 'finance') ? 'grid' : 'none';
+
+        if(id === 'eleves') showSubSection('sub-nouveau');
+        if(id === 'paiements') actualiserListeRecherchePaiement();
+        if(id === 'personnel') chargerStaff();
+        if(id === 'finance') { refreshUI(); chargerTableauMouvements(); chargerHistoriqueStaffGlobalUI(); }
+        if(id === 'rapports-eleves') { genererRapportElevesOrdre(); }
+        if(id === 'config') chargerConfig();
+    }
+
+    function showSubSection(id) {
+        document.querySelectorAll('.sub-section').forEach(s => s.style.display = 'none');
+        document.getElementById(id).style.display = 'block';
+        if(id === 'sub-nouveau') chargerListeRapide();
+        if(id === 'sub-ancien') chargerAnciens();
+        if(id === 'sub-gestion') chargerElevesGestion();
+    }
+
+    function showSubPaiement(id) {
+        document.getElementById('sub-encaissement').style.display = id === 'sub-encaissement' ? 'flex' : 'none';
+        document.getElementById('sub-autres-mouvements').style.display = id === 'sub-autres-mouvements' ? 'block' : 'none';
+    }
+
+    function toggleAutreMotifField() {
+        const motif = document.getElementById('payeMotif').value;
+        document.getElementById('autreMotifContainer').style.display = (motif === "Autres") ? "block" : "none";
+    }
+
+    // --- 4. GESTION ÉLÈVES ---
+    function ajouterEleve() {
+        const mat = "CST" + String(matriculeCount).padStart(4, '0');
+        const data = {
+            matricule: mat,
+            nom: document.getElementById('nom').value.toUpperCase(),
+            postnom: document.getElementById('postnom').value.toUpperCase(),
+            prenom: document.getElementById('prenom').value,
+            sexe: document.getElementById('sexeEleve').value,
+            classe: document.getElementById('classeSelect').value,
+            tarif: Number(document.getElementById('tarifIndiv').value),
+            nationalite: document.getElementById('nationalite').value,
+            lieuNaiss: document.getElementById('lieuNaiss').value,
+            dateNaiss: document.getElementById('dateNaiss').value,
+            nomPere: document.getElementById('nomPere').value,
+            telPere: document.getElementById('telPere').value,
+            nomMere: document.getElementById('nomMere').value,
+            telMere: document.getElementById('telMere').value
+        };
+        if(data.nom && data.classe) {
+            eleves.push(data); matriculeCount++;
+            localStorage.setItem('t2_mat_count', matriculeCount);
+            sauvegarder(); chargerListeRapide(); refreshUI();
+            alert("Inscrit ! Matricule : " + mat);
+            viderChampsInscr();
+        }
+    }
+
+    function viderChampsInscr() {
+        ["nom", "postnom", "prenom", "tarifIndiv", "lieuNaiss", "dateNaiss", "nomPere", "telPere", "nomMere", "telMere"].forEach(id => {
+            const el = document.getElementById(id); if(el) el.value = "";
+        });
+        document.getElementById('formTitleEleve').innerText = "Fiche d'Inscription Complète";
+        const btn = document.getElementById('btnSaveEleve');
+        btn.innerText = "ENREGISTRER L'ÉLÈVE";
+        btn.onclick = ajouterEleve;
+    }
+
+    function chargerListeRapide() {
+        const query = document.getElementById('searchQuick').value.toLowerCase();
+        const liste = eleves.filter(e => e.nom.toLowerCase().includes(query) || (e.matricule && e.matricule.toLowerCase().includes(query)));
+        document.getElementById('bodyQuickList').innerHTML = liste.slice().reverse().map(e => `
+            <tr><td>${e.matricule}</td><td>${e.nom} ${e.postnom || ''}</td><td>${e.classe || 'N/A'}</td><td>${e.sexe}</td></tr>
+        `).join('');
+    }
+
+    // Appelé lors du changement de motif ou saisie de l'autre motif pour rafraîchir en temps réel la situation
+    function declencherCalculSituationDynamique() {
+        const val = document.getElementById('searchPayeEleve').value;
+        const e = eleves.find(el => `${el.nom} ${el.postnom || ''} ${el.prenom || ''}`.trim() === val.trim());
+        if(e) {
+            chargerHistoriqueEleve(e);
+        }
+    }
+
+    function chargerAnciens() {
+        const classeFiltre = document.getElementById('filtreAncienClasse').value;
+        const tbody = document.querySelector('#tableAnciens tbody');
+        if(!classeFiltre) { tbody.innerHTML = "<tr><td colspan='3'>Sélectionnez une classe</td></tr>"; return; }
+        const liste = eleves.filter(e => e.classe === classeFiltre);
+        tbody.innerHTML = liste.map(e => `
+            <tr><td>${e.nom} ${e.postnom || ''}</td><td>${e.classe}</td>
+            <td><button class="btn-main" onclick="reinscrireEleve('${e.matricule}')">Réinscrire / Transférer</button></td></tr>
+        `).join('');
+    }
+
+    function reinscrireEleve(mat) {
+        const e = eleves.find(el => el.matricule === mat);
+        const nouvelleClasse = prompt("Confirmer ou changer la classe pour " + e.nom + " :", e.classe);
+        if(nouvelleClasse) { e.classe = nouvelleClasse; sauvegarder(); chargerAnciens(); alert("Transfert réussi !"); }
+    }
+
+    function chargerElevesGestion() {
+        const search = document.getElementById('searchEleve').value.toLowerCase();
+        const liste = eleves.filter(e => e.nom.toLowerCase().includes(search) || e.matricule.toLowerCase().includes(search));
+        document.querySelector('#tableElevesGestion tbody').innerHTML = liste.map(e => {
+            const idx = eleves.indexOf(e);
+            return `<tr><td>${e.matricule}</td><td>${e.nom} ${e.postnom || ''}</td>
+            <td><button class="btn-info" onclick="ouvrirModification(${idx})">Modifier Fiche</button>
+            <button class="btn-del" onclick="suppEleve(${idx})">X</button></td></tr>`;
+        }).join('');
+    }
+
+    function ouvrirModification(idx) {
+        const e = eleves[idx];
+        showSubSection('sub-nouveau');
+        document.getElementById('formTitleEleve').innerText = "MODIFIER : " + e.matricule;
+        document.getElementById('nom').value = e.nom;
+        document.getElementById('postnom').value = e.postnom;
+        document.getElementById('prenom').value = e.prenom;
+        document.getElementById('sexeEleve').value = e.sexe;
+        document.getElementById('classeSelect').value = e.classe;
+        document.getElementById('tarifIndiv').value = e.tarif;
+        document.getElementById('nationalite').value = e.nationalite;
+        document.getElementById('lieuNaiss').value = e.lieuNaiss;
+        document.getElementById('dateNaiss').value = e.dateNaiss;
+        document.getElementById('nomPere').value = e.nomPere;
+        document.getElementById('telPere').value = e.telPere;
+        document.getElementById('nomMere').value = e.nomMere;
+        document.getElementById('telMere').value = e.telMere;
+
+        const btn = document.getElementById('btnSaveEleve');
+        btn.innerText = "SAUVEGARDER LES MODIFICATIONS";
+        btn.onclick = function() {
+            eleves[idx] = {
+                ...e,
+                nom: document.getElementById('nom').value.toUpperCase(),
+                postnom: document.getElementById('postnom').value.toUpperCase(),
+                prenom: document.getElementById('prenom').value,
+                sexe: document.getElementById('sexeEleve').value,
+                classe: document.getElementById('classeSelect').value,
+                tarif: Number(document.getElementById('tarifIndiv').value),
+                nationalite: document.getElementById('nationalite').value,
+                lieuNaiss: document.getElementById('lieuNaiss').value,
+                dateNaiss: document.getElementById('dateNaiss').value,
+                nomPere: document.getElementById('nomPere').value,
+                telPere: document.getElementById('telPere').value,
+                nomMere: document.getElementById('nomMere').value,
+                telMere: document.getElementById('telMere').value
+            };
+            sauvegarder(); alert("Mise à jour réussie !");
+            viderChampsInscr(); chargerElevesGestion();
+        };
+    }
+
+    // --- 5. PAIEMENTS & REÇUS ---
+    function genererReference(prefixe) {
+        const d = new Date();
+        const unique = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
+        return `${prefixe}-${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}-${unique}`;
+    }
+
+    function actualiserListeRecherchePaiement() {
+        const datalist = document.getElementById('listeElevesPaye');
+        datalist.innerHTML = eleves.map(e => `<option value="${e.nom} ${e.postnom || ''} ${e.prenom || ''}">`).join('');
+    }
+
+    function autoFillEleve(val) {
+        const e = eleves.find(el => `${el.nom} ${el.postnom || ''} ${el.prenom || ''}`.trim() === val.trim());
+        if(e) { 
+            document.getElementById('payeClasse').value = e.classe;
+            chargerHistoriqueEleve(e);
+        }
+    }
+
+    // NOUVELLE AMÉLIORATION : AFFICHAGE COMPTE RENDU STRUCTURÉ, VENTILÉ ET DYNAMIQUE PAR MOIS/MOTIF SÉLECTIONNÉ
+    function chargerHistoriqueEleve(e) {
+        const nomC = `${e.nom} ${e.postnom || ''} ${e.prenom || ''}`.trim();
+        const hist = tousLesPaiements.filter(p => p.nomEleve === nomC);
+        
+        // Détermination du motif actuellement sélectionné dans le formulaire
+        let motifSelectionne = document.getElementById('payeMotif').value;
+        if(motifSelectionne === "Accessoires") {
+            let accs = [];
+            document.querySelectorAll('.acc-check:checked').forEach(c => accs.push(c.value));
+            if(accs.length > 0) motifSelectionne = "Accessoires (" + accs.join(', ') + ")";
+        } else if(motifSelectionne === "Autres") {
+            motifSelectionne = document.getElementById("autreMotif").value || "Autres Paiements";
+        }
+
+        // Calcul global sur l'écolage
+        const histMinervalTotal = hist.filter(p => !p.motif.includes("Tranche") && !p.motif.includes("Accessoires") && ["Septembre","Octobre","Novembre","Décembre","Janvier","Février","Mars","Avril","Mai","Juin"].includes(p.motif));
+        const totalPayeUSD = histMinervalTotal.reduce((s, p) => s + p.montant, 0);
+        
+        // Calcul ciblé et spécifique pour le motif ou le mois sélectionné
+        const paiementsDuMotif = hist.filter(p => p.motif.toLowerCase().trim() === motifSelectionne.toLowerCase().trim());
+        const totalDuMotifUSD = paiementsDuMotif.reduce((s, p) => s + p.montant, 0);
+
+        // Définir le coût théorique du motif sélectionné pour évaluer ce qu'il reste à solder
+        let totalAttenduPourCeMotif = e.tarif || 0; // Par défaut, le tarif écolage admis si c'est un mois standard
+        
+        // Si c'est un autre frais (Frais d'État, Accessoires, etc.)
+        if(motifSelectionne.includes("Tranche") || motifSelectionne.includes("Accessoires") || (!["Septembre","Octobre","Novembre","Décembre","Janvier","Février","Mars","Avril","Mai","Juin"].includes(motifSelectionne))) {
+            // S'il y a déjà eu un paiement, on se base dessus, sinon 0 en attendant la saisie
+            totalAttenduPourCeMotif = paiementsDuMotif.length > 0 ? paiementsDuMotif[0].montant : 0; 
+        }
+
+        const restePourCeMotif = totalAttenduPourCeMotif - totalDuMotifUSD;
+        
+        // Injection dynamique de la situation contextuelle selon le mois choisi
+        document.getElementById('statutPaiementRapide').innerHTML = `
+            <div style="border-bottom:1px solid #ddd; padding-bottom:5px; margin-bottom:5px;">
+                <b>Élève :</b> ${nomC}<br>
+                <b>Frais Annuel Admis :</b> ${e.tarif || 0} $<br>
+                <b>Total Écolage Déjà Versé :</b> <span style="color:green; font-weight:bold;">${totalPayeUSD.toFixed(2)} $</span>
+            </div>
+            <div style="background:#e3f2fd; padding:6px; border-radius:4px; border:1px solid #90caf9;">
+                <b>📍 Situation pour [ ${motifSelectionne} ] :</b><br>
+                Montant déjà avancé : <span style="color:green; font-weight:bold;">${totalDuMotifUSD.toFixed(2)} $</span><br>
+                Reste à payer ce mois : <span style="color:${restePourCeMotif > 0 ? 'red':'green'}; font-weight:bold;">${restePourCeMotif > 0 ? restePourCeMotif.toFixed(2) + ' $' : 'SOLDE EN ORDRE'}</span>
+            </div>
+        `;
+
+        // Séparation logique des lignes du tableau (Minerval vs Reste)
+        const paiementsMinerval = hist.filter(p => !p.motif.includes("Accessoires") && !p.motif.includes("Tranche") && ["Septembre","Octobre","Novembre","Décembre","Janvier","Février","Mars","Avril","Mai","Juin"].includes(p.motif));
+        const paiementsAnnexes = hist.filter(p => p.motif.includes("Accessoires") || p.motif.includes("Tranche") || !["Septembre","Octobre","Novembre","Décembre","Janvier","Février","Mars","Avril","Mai","Juin"].includes(p.motif));
+
+        let htmlSubdivise = "";
+
+        // 1. Groupe Minerval
+        htmlSubdivise += `<div class="hist-sub-title">📊 Minerval Écolage Scolaire</div>`;
+        htmlSubdivise += `<table style="font-size: 0.8rem; width:100%;"><thead><tr><th>Date</th><th>Motif</th><th>Montant</th><th>Reçu</th></tr></thead><tbody>`;
+        if(paiementsMinerval.length) {
+            htmlSubdivise += paiementsMinerval.map(p => `
+                <tr><td>${p.date}</td><td><b>${p.motif}</b></td><td style="color:green;font-weight:bold">${p.montantOriginal} ${p.devise}</td><td><button class="btn-info" onclick="voirRecu('${p.ref}')">👁</button></td></tr>
+            `).join('');
+        } else {
+            htmlSubdivise += `<tr><td colspan="4" style="color:#aaa; italic; text-align:center;">Aucun versement écolage enregistré.</td></tr>`;
+        }
+        htmlSubdivise += `</tbody></table>`;
+
+        // 2. Groupe Autres Frais
+        htmlSubdivise += `<div class="hist-sub-title" style="color:var(--finance); background:#f3e5f5;">🛍️ Frais Connexes, Inscriptions & Annexes</div>`;
+        htmlSubdivise += `<table style="font-size: 0.8rem; width:100%;"><thead><tr><th>Date</th><th>Motif</th><th>Montant</th><th>Reçu</th></tr></thead><tbody>`;
+        if(paiementsAnnexes.length) {
+            htmlSubdivise += paiementsAnnexes.map(p => `
+                <tr><td>${p.date}</td><td><b style="color:var(--finance);">${p.motif}</b></td><td style="color:green;font-weight:bold">${p.montantOriginal} ${p.devise}</td><td><button class="btn-info" onclick="voirRecu('${p.ref}')">👁</button></td></tr>
+            `).join('');
+        } else {
+            htmlSubdivise += `<tr><td colspan="4" style="color:#aaa; italic; text-align:center;">Aucun versement annexe enregistré.</td></tr>`;
+        }
+        htmlSubdivise += `</tbody></table>`;
+
+        document.getElementById('historiqueSubdiviseConteneur').innerHTML = htmlSubdivise;
+    }
+
+    function voirRecu(ref) {
+        const p = tousLesPaiements.find(x => x.ref === ref);
+        if(p) {
+            imprimerRecu(p, "ÉLÈVE");
+        } else {
+            staff.forEach(st => {
+                const sp = st.historiquePaiement.find(x => x.ref === ref);
+                if(sp) {
+                    imprimerRecu({
+                        ref: sp.ref,
+                        nom: st.nom,
+                        typeMouvement: sp.type + " ("+sp.mois+")",
+                        montant: sp.montant,
+                        date: sp.date,
+                        devise: "USD"
+                    }, "STAFF");
+                }
+            });
+        }
+    }
+
+    function validerPaiement() {
+        const nomC = document.getElementById('searchPayeEleve').value;
+        const mtOriginal = Number(document.getElementById('payeMontant').value);
+        const fuseeDevise = document.getElementById('payeDevise').value;
+        const dateP = document.getElementById('payeDate').value || new Date().toISOString().split('T')[0];
+        
+        let motif = document.getElementById('payeMotif').value;
+        const e = eleves.find(el => `${el.nom} ${el.postnom || ''} ${el.prenom || ''}`.trim() === nomC.trim());
+
+        if(!e || !mtOriginal) return alert("Veuillez sélectionner un élève et un montant.");
+
+        if(motif === "Accessoires") {
+            let accs = [];
+            document.querySelectorAll('.acc-check:checked').forEach(c => accs.push(c.value));
+            if(accs.length > 0) motif = "Accessoires (" + accs.join(', ') + ")";
+        } else if(motif === "Autres") {
+            motif = document.getElementById("autreMotif").value || "Autres Paiements";
+        }
+
+        let mtUSD = mtOriginal;
+        if(fuseeDevise === "CDF") {
+            mtUSD = mtOriginal / tauxChange;
+        }
+
+        const ref = genererReference('REC');
+        const p = { 
+            id: Date.now(), 
+            ref: ref,
+            nomEleve: nomC, 
+            matricule: e.matricule,
+            classe: e.classe,
+            motif: motif, 
+            montantOriginal: mtOriginal,
+            devise: fuseeDevise,
+            montant: mtUSD, 
+            date: dateP 
+        };
+
+        tousLesPaiements.push(p);
+        sauvegarder();
+        refreshUI();
+        autoFillEleve(nomC);
+        
+        document.querySelectorAll('.acc-check').forEach(c => c.checked = false);
+        document.getElementById("autreMotif").value = "";
+        document.getElementById("payeMontant").value = "";
+
+        imprimerRecu(p, "ÉLÈVE");
+    }
+
+    function verifierRecu() {
+        const ref = document.getElementById('refCheckInput').value.trim();
+        const res = document.getElementById('verifResult');
+        const p = tousLesPaiements.find(x => x.ref === ref);
+        const m = autresMouvements.find(x => x.ref === ref);
+
+        if(p) {
+            res.style.color = "green";
+            res.innerText = `✅ VALIDE : Élève ${p.nomEleve} - ${p.montantOriginal} ${p.devise} (${p.motif}) le ${p.date}`;
+        } else if(m) {
+            res.style.color = "green";
+            res.innerText = `✅ VALIDE : Mouvement ${m.type} - ${m.montant}$ (${m.libelle}) le ${m.date}`;
+        } else {
+            res.style.color = "red";
+            res.innerText = "❌ RÉFÉRENCE INCONNUE";
+        }
+    }
+
+    function imprimerRecu(data, cible) {
+        document.getElementById('rapportContent').style.display = 'none';
+        document.getElementById('recuContent').style.display = 'block';
+
+        let affichageSomme = "";
+        if(cible === 'ÉLÈVE') {
+            if(data.devise === "CDF") {
+                affichageSomme = `
+                    <div class="receipt-row" style="font-size:1.6rem; margin:0;">
+                        <span>SOMME PAYÉE :</span> <b>${data.montantOriginal.toLocaleString()} FC</b>
+                    </div>
+                    <div class="receipt-row" style="margin-top:5px; border-top:1px solid #ccc; padding-top:5px; font-style:italic;">
+                        <span>ÉQUIVALENT USD :</span> <b>${data.montant.toFixed(2)} USD</b>
+                    </div>`;
+            } else {
+                affichageSomme = `
+                    <div class="receipt-row" style="font-size:1.6rem; margin:0;">
+                        <span>SOMME PAYÉE :</span> <b>${data.montantOriginal} USD</b>
+                    </div>
+                    <div class="receipt-row" style="margin-top:5px; border-top:1px solid #ccc; padding-top:5px; font-style:italic;">
+                        <span>ÉQUIVALENT EN FRANCS :</span> <b>${(data.montantOriginal * tauxChange).toLocaleString()} FC</b>
+                    </div>`;
+            }
+        } else {
+            affichageSomme = `
+                <div class="receipt-row" style="font-size:1.6rem; margin:0;">
+                    <span>SOMME :</span> <b>${data.montant} $</b>
+                </div>
+                <div class="receipt-row" style="margin-top:5px; border-top:1px solid #ccc; padding-top:5px; font-style:italic;">
+                    <span>ÉQUIVALENT EN FRANCS :</span> <b>${(data.montant * tauxChange).toLocaleString()} FC</b>
+                </div>`;
+        }
+
+        let html = `
+            <div class="receipt-box">
+                <div class="receipt-header">
+                    <h1 style="margin:0; font-size:1.8rem; text-transform:uppercase;">${schoolData.name}</h1>
+                    <p style="font-size:0.9rem; margin:5px 0;">${schoolData.addr}</p>
+                    <p style="font-size:0.9rem;">Tél: ${schoolData.tel || '-'}</p>
+                    <div style="margin-top:15px; border:2px solid #000; padding:8px; display:inline-block; font-weight:bold; font-size:1.2rem;">
+                        REÇU / PIÈCE DE CAISSE N° ${data.ref}
+                    </div>
+                </div>
+                <div class="receipt-body" style="padding:10px 0;">
+                    <div class="receipt-row"><span>DATE :</span> <b>${data.date}</b></div>
+                    <div class="receipt-row"><span>NOM COMPLET :</span> <b>${cible === 'ÉLÈVE' ? data.nomEleve : data.nom}</b></div>
+                    ${cible === 'ÉLÈVE' ? `<div class="receipt-row"><span>CLASSE :</span> <b>${data.classe}</b></div>` : ''}
+                    <div class="receipt-row"><span>MOTIF / LIBELLÉ :</span> <b>${cible === 'ÉLÈVE' ? data.motif : data.typeMouvement}</b></div>
+                    
+                    <div style="margin-top:30px; border:2px solid #000; padding:15px; background:#f9f9f9;">
+                        ${affichageSomme}
+                    </div>
+                </div>
+                
+                <div class="validity-badge">
+                    🔒 RÉFÉRENCE DE VALIDATION : ${data.ref}
+                    <br><small style="font-weight:normal; font-size:0.7rem;">(Vérifiez l'authenticité de ce reçu avec ce code)</small>
+                </div>
+
+                <div class="receipt-footer" style="margin-top: 20px;">
+                    <p style="margin-bottom:40px;">Fait à Lubumbashi, le ${data.date}</p>
+                    <div style="display:flex; justify-content:space-between; text-align:center;">
+                        <div style="width:40%; border-top:1px solid #000; padding-top:5px;">Signature Bénéficiaire / Tuteur</div>
+                        <div style="width:40%; border-top:1px solid #000; padding-top:5px;">La Comptabilité / Caisse</div>
+                    </div>
+                </div>
+            </div>
+        `;
+        document.getElementById('recuContent').innerHTML = html;
+        document.getElementById('previewOverlay').style.display = 'flex';
+    }
+
+    function fermerApercu() {
+        document.getElementById('previewOverlay').style.display = 'none';
+    }
+
+    // --- 6. MOUVEMENTS DE CAISSE ---
+    function ajouterMouvement(type) {
+        let lib = type === 'ENTREE' ? document.getElementById('entreeLibelle').value : document.getElementById('depenseLibelle').value;
+        let mt = type === 'ENTREE' ? Number(document.getElementById('entreeMontant').value) : Number(document.getElementById('depenseMontant').value);
+        if(lib && mt) {
+            const ref = genererReference(type === 'ENTREE' ? 'ENT' : 'SOR');
+            autresMouvements.push({ref: ref, type, libelle: lib, montant: mt, date: new Date().toLocaleDateString('fr-FR')});
+            localStorage.setItem('t2_autres_mouv', JSON.stringify(autresMouvements));
+            refreshUI(); chargerTableauMouvements();
+            document.getElementById('entreeLibelle').value = ""; document.getElementById('entreeMontant').value = "";
+            document.getElementById('depenseLibelle').value = ""; document.getElementById('depenseMontant').value = "";
+            alert("Mouvement enregistré avec succès.");
+        }
+    }
+
+    function chargerTableauMouvements() {
+        document.getElementById('bodyMouvements').innerHTML = autresMouvements.slice().reverse().map((m, i) => `
+            <tr><td>${m.date}</td><td style="color:${m.type==='ENTREE'?'green':'red'}">${m.type}</td>
+            <td>${m.libelle}</td><td>${m.montant} $</td><td><small>${m.ref}</small></td>
+            <td><button class="btn-del" onclick="supprimerMouvement(${autresMouvements.length-1-i})">X</button></td></tr>
+        `).join('');
+    }
+
+    function supprimerMouvement(idx) { if(confirm("Supprimer ce mouvement ?")) { autresMouvements.splice(idx,1); localStorage.setItem('t2_autres_mouv', JSON.stringify(autresMouvements)); refreshUI(); chargerTableauMouvements(); } }
+
+    // --- 7. SYSTÈME, CALCULS & CONFIG ---
+    function refreshUI() {
+        document.getElementById('statTotalEleves').innerText = eleves.length;
+        document.getElementById('statTaux').innerText = tauxChange + " FC";
+        
+        // RECETTES TOTALES ÉLÈVES SANS AUCUNE FUITE DE FRAIS COMPTABLE
+        const recScol = tousLesPaiements.reduce((s, p) => s + p.montant, 0);
+        
+        const ent = autresMouvements.filter(m => m.type === 'ENTREE').reduce((s, m) => s + m.montant, 0);
+        const sorMouv = autresMouvements.filter(m => m.type === 'SORTIE').reduce((s, m) => s + m.montant, 0);
+        
+        let totalAvances = 0;
+        staff.forEach(st => {
+            if(st.historiquePaiement) {
+                totalAvances += st.historiquePaiement.filter(p => p.type === "AVANCE").reduce((s, p) => s + p.montant, 0);
+            }
+        });
+        
+        const totalRecettes = recScol + ent;
+        const totalSorties = sorMouv + totalAvances;
+        const caisseNet = totalRecettes - totalSorties;
+
+        document.getElementById('statRecettes').innerText = totalRecettes.toFixed(2) + " $";
+        document.getElementById('statCaisse').innerText = caisseNet.toFixed(2) + " $";
+
+        if(document.getElementById('finTotalMinerval')) {
+            document.getElementById('finTotalMinerval').innerText = recScol.toFixed(2);
+            document.getElementById('finTotalAvances').innerText = totalAvances.toFixed(2);
+            document.getElementById('finMasseSal').innerText = staff.reduce((s, st) => s + st.salaire, 0).toFixed(2);
+            document.getElementById('finBilanNet').innerText = caisseNet.toFixed(2) + " $";
+            document.getElementById('finBilanFC').innerText = (caisseNet * tauxChange).toLocaleString() + " FC";
+            
+            // VENTILATION DU LIVRE DE REVENUE CENTRAL VISIBLE DANS L'ONGLET FINANCE
+            const recMinerval = tousLesPaiements.filter(p => !p.motif.includes("Tranche") && !p.motif.includes("Accessoires") && ["Septembre","Octobre","Novembre","Décembre","Janvier","Février","Mars","Avril","Mai","Juin"].includes(p.motif)).reduce((s,p) => s + p.montant, 0);
+            const recEtat = tousLesPaiements.filter(p => p.motif.includes("Tranche")).reduce((s,p) => s + p.montant, 0);
+            const recAccessoires = tousLesPaiements.filter(p => p.motif.includes("Accessoires")).reduce((s,p) => s + p.montant, 0);
+            const recAutresPaiements = tousLesPaiements.reduce((s,p) => {
+                const m = p.motif;
+                if(!m.includes("Tranche") && !m.includes("Accessoires") && !["Septembre","Octobre","Novembre","Décembre","Janvier","Février","Mars","Avril","Mai","Juin"].includes(m)) {
+                    return s + p.montant;
+                }
+                return s;
+            }, 0);
+
+            document.getElementById('financeRecettesMois').innerHTML = `
+                <div style="display:flex; justify-content:space-between; padding:4px 0;"><span>🏫 Minerval Général :</span><b>${recMinerval.toFixed(2)} $</b></div>
+                <div style="display:flex; justify-content:space-between; padding:4px 0;"><span>🇨🇩 Frais de l'État :</span><b>${recEtat.toFixed(2)} $</b></div>
+                <div style="display:flex; justify-content:space-between; padding:4px 0;"><span>👕 Accessoires Scolaires :</span><b>${recAccessoires.toFixed(2)} $</b></div>
+                <div style="display:flex; justify-content:space-between; padding:4px 0;"><span>📦 Autres Versements Annexes :</span><b>${recAutresPaiements.toFixed(2)} $</b></div>
+                <div style="display:flex; justify-content:space-between; padding:4px 0; border-top:1px dashed #ccc; margin-top:5px; color:green; font-weight:bold;"><span>📈 Entrées Diverses (Caisse) :</span><b>${ent.toFixed(2)} $</b></div>
+            `;
+        }
+    }
+
+    function imprimerRapport() {
+        document.getElementById('recuContent').style.display = 'none';
+        document.getElementById('rapportContent').style.display = 'block';
+
+        const recMinerval = tousLesPaiements.filter(p => !p.motif.includes("Tranche") && !p.motif.includes("Accessoires") && ["Septembre","Octobre","Novembre","Décembre","Janvier","Février","Mars","Avril","Mai","Juin"].includes(p.motif)).reduce((s,p) => s + p.montant, 0);
+        const recEtat = tousLesPaiements.filter(p => p.motif.includes("Tranche")).reduce((s,p) => s + p.montant, 0);
+        const recAccessoires = tousLesPaiements.filter(p => p.motif.includes("Accessoires")).reduce((s,p) => s + p.montant, 0);
+        
+        const recAutresPaiements = tousLesPaiements.reduce((s,p) => {
+            const m = p.motif;
+            if(!m.includes("Tranche") && !m.includes("Accessoires") && !["Septembre","Octobre","Novembre","Décembre","Janvier","Février","Mars","Avril","Mai","Juin"].includes(m)) {
+                return s + p.montant;
+            }
+            return s;
+        }, 0);
+
+        const ent = ancients_mouv = autresMouvements.filter(m => m.type === 'ENTREE').reduce((s, m) => s + m.montant, 0);
+        const sorMouv = autresMouvements.filter(m => m.type === 'SORTIE').reduce((s, m) => s + m.montant, 0);
+        
+        let totalAvances = 0;
+        staff.forEach(st => {
+            if(st.historiquePaiement) totalAvances += st.historiquePaiement.filter(p => p.type === "AVANCE").reduce((s, p) => s + p.montant, 0);
+        });
+
+        const totalRecettes = recMinerval + recEtat + recAccessoires + recAutresPaiements + ent;
+        const totalSorties = sorMouv + totalAvances;
+        const netCaisse = totalRecettes - totalSorties;
+
+        let html = `
+            <div class="receipt-box" style="max-width:100%; border:3px solid #000;">
+                <div class="receipt-header">
+                    <h2>${schoolData.name.toUpperCase()}</h2>
+                    <h3>RAPPORT FINANCIER EXÉCUTIF - EN DATE DU ${new Date().toLocaleDateString('fr-FR')}</h3>
+                    <p>Taux de référence : 1 USD = ${tauxChange} FC</p>
+                </div>
+                <div style="margin:20px 0;">
+                    <h4 style="border-bottom:2px solid #000; padding-bottom:5px; margin-bottom:10px; color:var(--accent);">🟢 ENTRÉES ET RECETTES</h4>
+                    <div class="receipt-row"><span>Recettes Minerval (Mensualités) :</span> <b>${recMinerval.toFixed(2)} $</b></div>
+                    <div class="receipt-row"><span>Frais de l'État :</span> <b>${recEtat.toFixed(2)} $</b></div>
+                    <div class="receipt-row"><span>Accessoires :</span> <b>${recAccessoires.toFixed(2)} $</b></div>
+                    <div class="receipt-row"><span>Autres Paiements Élèves :</span> <b>${recAutresPaiements.toFixed(2)} $</b></div>
+                    <div class="receipt-row"><span>Autres Entrées Diverses :</span> <b>${ent.toFixed(2)} $</b></div>
+                    <div class="receipt-row" style="font-weight:bold; border-top:1px dashed #000; padding-top:5px;"><span>TOTAL ENTRÉES :</span> <b>${totalRecettes.toFixed(2)} $</b></div>
+                </div>
+
+                <div style="margin:20px 0;">
+                    <h4 style="border-bottom:2px solid #000; padding-bottom:5px; margin-bottom:10px; color:var(--danger);">🔴 SORTIES ET CHARGES</h4>
+                    <div class="receipt-row"><span>Dépenses de Fonctionnement :</span> <b>${sorMouv.toFixed(2)} $</b></div>
+                    <div class="receipt-row"><span>Masse Salariale Versée (Avances Staff) :</span> <b>${totalAvances.toFixed(2)} $</b></div>
+                    <div class="receipt-row" style="font-weight:bold; border-top:1px dashed #000; padding-top:5px;"><span>TOTAL SORTIES :</span> <b>${totalSorties.toFixed(2)} $</b></div>
+                </div>
+
+                <div style="margin-top:30px; border:2px solid #000; padding:20px; background:#f4f7f6; text-align:center;">
+                    <span style="font-size:1.2rem; font-weight:bold; display:block; margin-bottom:5px;">LIQUIDITÉ DISPONIBLE NETTE EN CAISSE</span>
+                    <span style="font-size:2.5rem; font-weight:800; color:var(--accent);">${netCaisse.toFixed(2)} USD</span>
+                    <br>
+                    <span style="font-size:1.4rem; font-weight:bold; color:#555;"> soit ${(netCaisse * tauxChange).toLocaleString()} CDF</span>
+                </div>
+                
+                <div style="margin-top:5px; text-align:right; font-size:0.8rem; font-style:italic;">
+                    Généré électroniquement par la direction générale.
+                </div>
+            </div>
+        `;
+        document.getElementById('rapportContent').innerHTML = html;
+        document.getElementById('previewOverlay').style.display = 'flex';
+    }
+
+    function sauvegarder() {
+        localStorage.setItem('t2_eleves', JSON.stringify(eleves));
+        localStorage.setItem('t2_paiements_all', JSON.stringify(tousLesPaiements));
+        localStorage.setItem('t2_classes', JSON.stringify(classes));
+        localStorage.setItem('t2_staff', JSON.stringify(staff));
+    }
+
+    function remplirSelects() {
+        const h = classes.map(c => `<option value="${c.nom}">${c.nom}</option>`).join('');
+        document.getElementById('classeSelect').innerHTML = h;
+        document.getElementById('filtreAncienClasse').innerHTML = '<option value="">-- Choisir --</option>' + h;
+        document.getElementById('repClasseSelect').innerHTML = h;
+    }
+
+    function chargerConfig() {
+        document.querySelector('#tableConfigClasses tbody').innerHTML = classes.map((c, i) => `
+            <tr><td>${c.cat}</td><td>${c.nom}</td><td>${c.tarif} $</td>
+            <td><button class="btn-del" onclick="supprimerClasse(${i})">X</button></td></tr>
+        `).join('');
+        document.getElementById('schoolNameInput').value = schoolData.name;
+        document.getElementById('schoolAddress').value = schoolData.addr;
+    }
+
+    function ajouterClasse() {
+        classes.push({cat: document.getElementById('newClassCat').value, nom: document.getElementById('newClassName').value, tarif: Number(document.getElementById('newClassTarif').value)});
+        localStorage.setItem('t2_classes', JSON.stringify(classes));
+        remplirSelects(); chargerConfig();
+    }
+
+    function supprimerClasse(i) { classes.splice(i,1); localStorage.setItem('t2_classes', JSON.stringify(classes)); remplirSelects(); chargerConfig(); }
+    function suppEleve(i) { if(confirm("Supprimer définitivement cet élève ?")) { eleves.splice(i,1); sauvegarder(); chargerElevesGestion(); refreshUI(); } }
+    function updateSchoolUI() { 
+        document.getElementById('navSchoolName').innerText = schoolData.name; 
+        document.getElementById('loginSchoolName').innerText = schoolData.name; 
+        document.getElementById('logoInitial').innerText = schoolData.name[0].toUpperCase(); 
+    }
+    
+    function sauverCoords() {
+        schoolData.name = document.getElementById('schoolNameInput').value;
+        schoolData.addr = document.getElementById('schoolAddress').value;
+        schoolData.tel = document.getElementById('schoolPhone').value;
+        localStorage.setItem('t2_sdata', JSON.stringify(schoolData));
+        updateSchoolUI();
+        alert("Coordonnées mises à jour !");
+    }
+
+    function askSecurity(s, b) { targetSection = s; targetBtn = b; document.getElementById('financeOverlay').style.display = 'flex'; }
+    function closeFinance() { document.getElementById('financeOverlay').style.display = 'none'; }
+    function checkAdminAccess() { if(document.getElementById('adminPassInput').value === adminPass) { closeFinance(); showSection(targetSection, targetBtn); } else { alert("Mot de passe incorrect"); } }
+
+    function changerPinSecurise() {
+        let oldP = document.getElementById('oldPin').value;
+        let newP = document.getElementById('newPin').value;
+        let confP = document.getElementById('confirmPin').value;
+        if(oldP !== currentPin) return alert("Ancien PIN erroné.");
+        if(newP !== confP || !newP) return alert("Confirmation invalide.");
+        currentPin = newP; localStorage.setItem('t2_pin', currentPin);
+        alert("PIN modifié !");
+    }
+
+    function changerAdminSecurise() {
+        let oldA = document.getElementById('oldAdmin').value;
+        let newA = document.getElementById('newAdmin').value;
+        let confA = document.getElementById('confirmAdmin').value;
+        if(oldA !== adminPass) return alert("Ancien mot de passe erroné.");
+        if(newA !== confA || !newA) return alert("Confirmation invalide.");
+        adminPass = newA; localStorage.setItem('t2_admin', adminPass);
+        alert("Mot de passe admin modifié !");
+    }
+
+    // --- 8. PERSONNEL (GESTION AVANCÉE AVEC SAISIE MANUELLE ET RESTE DU CORRECT) ---
+    function ajouterStaff() {
+        const nom = document.getElementById('staffNom').value;
+        const fonction = document.getElementById('staffFonction').value || "Non précisée";
+        const sal = Number(document.getElementById('staffSalaire').value);
+        if(nom && sal) {
+            staff.push({ nom, fonction, salaire: sal, historiquePaiement: [] });
+            sauvegarder(); chargerStaff();
+            document.getElementById('staffNom').value = ""; document.getElementById('staffFonction').value = ""; document.getElementById('staffSalaire').value = "";
+        }
+    }
+
+    function chargerStaff() {
+        const tbody = document.querySelector('#tableStaff tbody');
+        tbody.innerHTML = staff.map((st, i) => {
+            const stAvances = st.historiquePaiement ? st.historiquePaiement.filter(p => p.type === 'AVANCE').reduce((s, p) => s + p.montant, 0) : 0;
+            const stPrimes = st.historiquePaiement ? st.historiquePaiement.filter(p => p.type === 'PRIME').reduce((s, p) => s + p.montant, 0) : 0;
+            
+            const net = st.salaire + stPrimes - stAvances;
+            return `<tr><td><b>${st.nom}</b></td><td><small>${st.fonction || 'Non spécifiée'}</small></td><td>${st.salaire} $</td><td style="color:red">-${stAvances} $</td>
+                <td style="font-weight:bold; color:var(--accent)">${net} $</td>
+                <td><button class="btn-info" onclick="genererPaie(${i}, 'avance')">💸 Avance</button>
+                    <button class="btn-main" onclick="genererPaie(${i}, 'prime')">🎁 Prime</button>
+                    <button class="btn-del" onclick="supprimerStaff(${i})">X</button></td></tr>`;
+        }).join('');
+    }
+
+    function genererPaie(idx, type) {
+        const mois = prompt("Pour quel mois ou motif ? (Ex: Septembre, Octobre, Mai, Bonus...)");
+        if(!mois) return;
+        const montant = Number(prompt(`Montant de la ${type} pour ${staff[idx].nom} ($) :`));
+        
+        if(montant > 0) {
+            if(!staff[idx].historiquePaiement) staff[idx].historiquePaiement = [];
+            
+            const ref = genererReference('STAFF');
+            staff[idx].historiquePaiement.push({
+                ref: ref,
+                mois: mois,
+                type: type.toUpperCase(),
+                montant: montant,
+                date: new Date().toLocaleDateString('fr-FR')
+            });
+            
+            sauvegarder(); chargerStaff(); refreshUI();
+            
+            if(confirm("Action enregistrée. Voir l'aperçu de la pièce de caisse ?")) {
+                imprimerRecu({
+                    ref: ref, 
+                    nom: staff[idx].nom, 
+                    typeMouvement: `${type.toUpperCase()} (${mois})`, 
+                    montant: montant, 
+                    date: new Date().toLocaleDateString('fr-FR')
+                }, "STAFF");
+            }
+        }
+    }
+
+    // CORRECTION DU CALCUL : ÉVALUATION DES AVANCES ET PRIMES SPÉCIFIQUEMENT SUR LE MÊME MOIS/MOTIF
+    function chargerHistoriqueStaffGlobalUI() {
+        const tbody = document.getElementById('bodyHistoriqueStaffGlobal');
+        let records = [];
+        
+        staff.forEach(st => {
+            if(st.historiquePaiement) {
+                st.historiquePaiement.forEach(p => {
+                    records.push({
+                        date: p.date,
+                        nom: st.nom,
+                        mois: p.mois,
+                        type: p.type,
+                        montant: p.montant,
+                        ref: p.ref,
+                        salaireBase: st.salaire,
+                        historiqueComplet: st.historiquePaiement
+                    });
+                });
+            }
+        });
+
+        if(records.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="6">Aucun historique disponible</td></tr>';
+            return;
+        }
+
+        // Tri décroissant pour afficher les derniers mouvements en premier
+        records.sort((a,b) => b.date.localeCompare(a.date));
+
+        tbody.innerHTML = records.map(r => {
+            // Filtrer le calcul du cumul uniquement pour le même mois ou motif exact
+            const cumulAvancesDuMois = r.historiqueComplet.filter(x => x.type === 'AVANCE' && x.mois.toLowerCase().trim() === r.mois.toLowerCase().trim()).reduce((s, x) => s + x.montant, 0);
+            const cumulPrimesDuMois = r.historiqueComplet.filter(x => x.type === 'PRIME' && x.mois.toLowerCase().trim() === r.mois.toLowerCase().trim()).reduce((s, x) => s + x.montant, 0);
+            
+            // Reste à payer = (Salaire de base + Primes du mois) - Avances obtenues sur ce même mois
+            const resteDuMois = r.salaireBase + cumulPrimesDuMois - cumulAvancesDuMois;
+
+            return `<tr>
+                <td>${r.date}</td>
+                <td><b>${r.nom}</b></td>
+                <td>${r.mois}</td>
+                <td style="color:${r.type==='AVANCE'?'red':'green'}">${r.type}</td>
+                <td><b>${r.montant} $</b></td>
+                <td style="font-weight:bold; color:${resteDuMois > 0 ? '#e74c3c' : '#27ae60'}">${resteDuMois} $</td>
+            </tr>`;
+        }).join('');
+    }
+
+    function supprimerStaff(i) { if(confirm("Supprimer ce membre du staff ?")) { staff.splice(i,1); sauvegarder(); chargerStaff(); refreshUI(); } }
+    
+    // --- 9. RAPPORT ÉLÈVES EN ORDRE / INSOLVABLES ---
+    function genererRapportElevesOrdre() {
+        const classeTarget = document.getElementById('repClasseSelect').value;
+        const motifTarget = document.getElementById('repMoisSelect').value;
+        const typeFiltre = document.getElementById('repTypeSelect').value;
+        const tbody = document.getElementById('bodyRapportEleves');
+
+        if(!classeTarget) {
+            tbody.innerHTML = '<tr><td colspan="4">Veuillez d\'abord configurer une classe.</td></tr>';
+            return;
+        }
+
+        const elevesClasse = eleves.filter(e => e.classe === classeTarget);
+        let html = "";
+
+        elevesClasse.forEach(e => {
+            const nomC = `${e.nom} ${e.postnom || ''} ${e.prenom || ''}`.trim();
+            const aPaye = tousLesPaiements.some(p => p.nomEleve === nomC && p.motif.toLowerCase().includes(motifTarget.toLowerCase()));
+            
+            if(typeFiltre === "Ordre" && aPaye) {
+                html += `<tr><td>${e.matricule}</td><td>${nomC}</td><td>${e.classe}</td><td style="color:green; font-weight:bold;">🟢 EN ORDRE</td></tr>`;
+            } else if(typeFiltre === "Dette" && !aPaye) {
+                html += `<tr><td>${e.matricule}</td><td>${nomC}</td><td>${e.classe}</td><td style="color:red; font-weight:bold;">🔴 INSOLVABLE</td></tr>`;
+            }
+        });
+
+        tbody.innerHTML = html || `<tr><td colspan="4" style="text-align:center;">Aucun élève trouvé pour ce critère.</td></tr>`;
+    }
+
+    function imprimerRapportEleves() {
+        document.getElementById('recuContent').style.display = 'none';
+        document.getElementById('rapportContent').style.display = 'block';
+
+        const classeTarget = document.getElementById('repClasseSelect').value;
+        const motifTarget = document.getElementById('repMoisSelect').value;
+        const typeFiltre = document.getElementById('repTypeSelect').value;
+        const elevesClasse = eleves.filter(e => e.classe === classeTarget);
+
+        let trs = "";
+        elevesClasse.forEach(e => {
+            const nomC = `${e.nom} ${e.postnom || ''} ${e.prenom || ''}`.trim();
+            const aPaye = tousLesPaiements.some(p => p.nomEleve === nomC && p.motif.toLowerCase().includes(motifTarget.toLowerCase()));
+            
+            if(typeFiltre === "Ordre" && aPaye) {
+                trs += `<tr><td style="border:1px solid #000; padding:8px;">${e.matricule}</td><td style="border:1px solid #000; padding:8px;">${nomC}</td><td style="border:1px solid #000; padding:8px; color:green;">EN ORDRE</td></tr>`;
+            } else if(typeFiltre === "Dette" && !aPaye) {
+                trs += `<tr><td style="border:1px solid #000; padding:8px;">${e.matricule}</td><td style="border:1px solid #000; padding:8px;">${nomC}</td><td style="border:1px solid #000; padding:8px; color:red;">INSOLVABLE</td></tr>`;
+            }
+        });
+
+        let html = `
+            <div class="receipt-box" style="border:2px solid #000; padding:30px;">
+                <div class="receipt-header">
+                    <h2>${schoolData.name}</h2>
+                    <h3>LISTE DES ÉLÈVES : ${typeFiltre === 'Ordre' ? 'EN ORDRE DE PAIEMENT' : 'INSOLVABLES (DETTE)'}</h3>
+                    <p><b>Classe :</b> ${classeTarget} | <b>Frais visé :</b> ${motifTarget}</p>
+                    <p>Date d'édition : ${new Date().toLocaleDateString('fr-FR')}</p>
+                </div>
+                <table style="width:100%; border-collapse:collapse; margin-top:20px;">
+                    <thead>
+                        <tr>
+                            <th style="border:1px solid #000; padding:8px; background:#eee;">MATRICULE</th>
+                            <th style="border:1px solid #000; padding:8px; background:#eee;">NOM COMPLET</th>
+                            <th style="border:1px solid #000; padding:8px; background:#eee;">STATUT</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${trs || '<tr><td colspan="3" style="text-align:center; padding:10px;">Aucun résultat correspondant.</td></tr>'}
+                    </tbody>
+                </table>
+                <div style="margin-top:40px; text-align:right;">
+                    <p>Le Bureau de la Comptabilité</p>
+                </div>
+            </div>
+        `;
+
+        document.getElementById('rapportContent').innerHTML = html;
+        document.getElementById('previewOverlay').style.display = 'flex';
+    }
+    
+    function resetApp() { if(confirm("ATTENTION : Cela va supprimer TOUTES les données. Confirmer ?")) { localStorage.clear(); location.reload(); } }
+    function changerTaux() { tauxChange = Number(document.getElementById('tauxInput').value); localStorage.setItem('t2_taux', tauxChange); document.getElementById('displayTauxNav').innerText = "Taux: 1$ = "+tauxChange+" FC"; refreshUI(); alert("Taux mis à jour !"); }
+    <link rel="manifest" href="manifest.json">
 
 <script>
-    let d = JSON.parse(localStorage.getItem('fkm_v11')) || { m: {}, logs: [], errors: [] };
-    let isAdmin = false;
-    const ADMIN_PIN = "2026";
-
-    function save() { localStorage.setItem('fkm_v11', JSON.stringify(d)); render(); }
-
-    function toggleAuth() {
-        if(!isAdmin) {
-            let p = prompt("Code PIN Administrateur :");
-            if(p === ADMIN_PIN) {
-                isAdmin = true;
-                document.getElementById('main-body').classList.add('is-admin');
-                document.getElementById('auth-btn').innerText = "🔓 MODE: ADMIN";
-                document.getElementById('auth-btn').style.background = "var(--green)";
-            } else { alert("Code incorrect !"); }
-        } else {
-            isAdmin = false;
-            document.getElementById('main-body').classList.remove('is-admin');
-            document.getElementById('auth-btn').innerText = "🔒 MODE: STAFF";
-            document.getElementById('auth-btn').style.background = "var(--border)";
-        }
-        render();
-    }
-
-    function setDailyInit() {
-        if(!confirm("Confirmer les stocks de départ ?")) return;
-        d.m = {
-            ts: new Date().toISOString(),
-            cUSD: parseFloat(document.getElementById('i-cash-usd').value||0), cCDF: parseFloat(document.getElementById('i-cash-cdf').value||0),
-            ua: parseFloat(document.getElementById('i-ua').value||0), uo: parseFloat(document.getElementById('i-uo').value||0),
-            uaf: parseFloat(document.getElementById('i-uaf').value||0), uv: parseFloat(document.getElementById('i-uv').value||0),
-            maUSD: parseFloat(document.getElementById('i-ma-usd').value||0), maCDF: parseFloat(document.getElementById('i-ma-cdf').value||0),
-            mvUSD: parseFloat(document.getElementById('i-mv-usd').value||0), mvCDF: parseFloat(document.getElementById('i-mv-cdf').value||0),
-            moUSD: parseFloat(document.getElementById('i-mo-usd').value||0), moCDF: parseFloat(document.getElementById('i-mo-cdf').value||0)
-        };
-        d.logs = []; d.errors = []; save();
-    }
-
-    function autoCalc() {
-        const srv = document.getElementById('op-service').value;
-        const q = parseFloat(document.getElementById('op-qty').value || 0);
-        const cashField = document.getElementById('op-cash');
-        if (q <= 0 || srv.startsWith("R-")) return;
-        if (srv.startsWith("U-")) {
-            let p = 0;
-            if (srv === "U-Voda") {
-                if (q >= 1) p = 3000; else if (q >= 0.6) p = 2000; else if (q >= 0.5) p = 1500; else if (q >= 0.3) p = 1000; else if (q >= 0.15) p = 500;
-            } else {
-                if (q >= 100) p = 3000; else if (q >= 60) p = 2000; else if (q >= 50) p = 1500; else if (q >= 30) p = 1000; else if (q >= 15) p = 500;
-            }
-            cashField.value = p;
-            document.getElementById('op-curr').value = "CDF";
-        } else if (srv.startsWith("M-")) { cashField.value = q; }
-    }
-
-    function toggleSync() { document.getElementById('op-qty').value = ""; document.getElementById('op-cash').value = ""; }
-
-    function calculateStats() {
-        let c = JSON.parse(JSON.stringify(d.m || {}));
-        let s = { 
-            uCash:0, uNet:0, depUSD:0, depCDF:0, retUSD:0, retCDF:0,
-            uA:0, uO:0, uAf:0, uV:0, cashA:0, cashO:0, cashAf:0, cashV:0,
-            dA: {u:0, f:0}, dV: {u:0, f:0}, dO: {u:0, f:0},
-            rA: {u:0, f:0}, rV: {u:0, f:0}, rO: {u:0, f:0}
-        };
-        if(!d.m || !d.m.ts) return s;
-
-        d.logs.forEach(l => {
-            const isUSD = l.curr === "USD";
-            if(l.srv.startsWith("U-")) {
-                let gain = (l.srv === "U-Voda") ? (l.qty * 900) : (l.qty * 9);
-                s.uNet += gain;
-                const key = l.srv.includes("Air") ? "ua" : l.srv.includes("Ora") ? "uo" : l.srv.includes("Afri") ? "uaf" : "uv";
-                c[key] -= l.qty; 
-                if(l.srv==="U-Airtel") { s.uA+=l.qty; s.cashA+=l.cash; }
-                else if(l.srv==="U-Orange") { s.uO+=l.qty; s.cashO+=l.cash; }
-                else if(l.srv==="U-Afri") { s.uAf+=l.qty; s.cashAf+=l.cash; }
-                else { s.uV+=l.qty; s.cashV+=l.cash; }
-                if(isUSD) c.cUSD += l.cash; else c.cCDF += l.cash;
-                s.uCash += (isUSD ? l.cash * 2500 : l.cash); 
-            } 
-            else if(l.srv.startsWith("R-")) {
-                if(l.srv==="R-CASH-USD") c.cUSD += l.qty;
-                else if(l.srv==="R-CASH-CDF") c.cCDF += l.qty;
-                else if(l.srv==="R-UA") c.ua += l.qty;
-                else if(l.srv==="R-UO") c.uo += l.qty;
-                else if(l.srv==="R-UAF") c.uaf += l.qty;
-                else if(l.srv==="R-UV") c.uv += l.qty;
-                else if(l.srv==="R-MA") { if(isUSD) c.maUSD += l.qty; else c.maCDF += l.qty; }
-                else if(l.srv==="R-MV") { if(isUSD) c.mvUSD += l.qty; else c.mvCDF += l.qty; }
-                else if(l.srv==="R-MO") { if(isUSD) c.moUSD += l.qty; else c.moCDF += l.qty; }
-            }
-            else if(l.srv === "V-GAIN") { c.cCDF += l.cash; s.uNet -= l.cash; }
-            else if(l.srv === "CHANGE") {
-                if(isUSD) { c.cUSD += l.cash; c.cCDF -= l.qty; } 
-                else { c.cCDF += l.cash; c.cUSD -= l.qty; }
-            } else {
-                const isD = l.srv.endsWith("-D"); 
-                const net = l.srv.includes("AIR") ? "A" : l.srv.includes("VOD") ? "V" : "O";
-                const netCode = net.toLowerCase();
-                if(isD) { 
-                    if(isUSD) { c.cUSD += l.cash; c["m"+netCode+"USD"] -= l.qty; s.depUSD += l.qty; s["d"+net].u += l.qty; } 
-                    else { c.cCDF += l.cash; c["m"+netCode+"CDF"] -= l.qty; s.depCDF += l.qty; s["d"+net].f += l.qty; }
-                } else { 
-                    if(isUSD) { c.cUSD -= l.cash; c["m"+netCode+"USD"] += l.qty; s.retUSD += l.qty; s["r"+net].u += l.qty; } 
-                    else { c.cCDF -= l.cash; c["m"+netCode+"CDF"] += l.qty; s.retCDF += l.qty; s["r"+net].f += l.qty; }
-                }
-            }
-        });
-        s.uStockCost = s.uCash - s.uNet;
-        return { ...s, finalC: c };
-    }
-
-    function render() {
-        if(!d.m || !d.m.ts) return;
-        const s = calculateStats(); const c = s.finalC;
-        
-        const isSessionStarted = d.m.ts && !isAdmin;
-        document.getElementById('init-form').classList.toggle('locked', isSessionStarted);
-        document.getElementById('btn-session').style.display = isSessionStarted ? "none" : "block";
-
-        document.getElementById('g-u-net').innerText = isAdmin ? `${Math.floor(s.uNet).toLocaleString()} FC` : "SÉCURISÉ";
-        document.getElementById('g-u-stock-cost').innerText = `${Math.floor(s.uStockCost).toLocaleString()} FC`;
-        document.getElementById('m-cash').innerText = `${d.m.cUSD}$ | ${d.m.cCDF} FC`;
-        document.getElementById('m-momo-total').innerText = `${(d.m.maUSD+d.m.mvUSD+d.m.moUSD).toFixed(1)}$ | ${(d.m.maCDF+d.m.mvCDF+d.m.moCDF).toLocaleString()} FC`;
-        document.getElementById('m-units').innerText = `A:${d.m.ua} O:${d.m.uo} Af:${d.m.uaf} V:${d.m.uv}$`;
-        document.getElementById('g-total-units-cash').innerText = `${s.uCash.toLocaleString()} FC`;
-        document.getElementById('g-detail-units-cash').innerText = `A:${s.uA} | O:${s.uO} | Af:${s.uAf} | V:${s.uV.toFixed(2)}$`;
-        
-        document.getElementById('g-total-dep').innerText = `${s.depUSD}$ | ${s.depCDF}F`;
-        document.getElementById('g-detail-dep').innerText = `A:${s.dA.u}$|${s.dA.f}F V:${s.dV.u}$|${s.dV.f}F O:${s.dO.u}$|${s.dO.f}F`;
-        document.getElementById('g-total-ret').innerText = `${s.retUSD}$ | ${s.retCDF}F`;
-        document.getElementById('g-detail-ret').innerText = `A:${s.rA.u}$|${s.rA.f}F V:${s.rV.u}$|${s.rV.f}F O:${s.rO.u}$|${s.rO.f}F`;
-
-        document.getElementById('now-cash').innerText = `${c.cUSD.toFixed(1)}$ | ${c.cCDF.toLocaleString()} FC`;
-        
-        const stocks = [['s-ua', c.ua], ['s-uo', c.uo], ['s-uaf', c.uaf]];
-        stocks.forEach(([id, val]) => {
-            const el = document.getElementById(id); el.innerText = val; el.className = val < 50 ? "low-stock" : "";
-        });
-        document.getElementById('s-uv').innerText = c.uv.toFixed(2);
-        
-        document.getElementById('s-air-momo').innerHTML = `<div style="color:var(--blue)">AIRTEL</div>${c.maUSD.toFixed(1)}$ / ${c.maCDF.toLocaleString()}F`;
-        document.getElementById('s-vod-momo').innerHTML = `<div style="color:var(--green)">VODA</div>${c.mvUSD.toFixed(1)}$ / ${c.mvCDF.toLocaleString()}F`;
-        document.getElementById('s-ora-momo').innerHTML = `<div style="color:var(--primary)">ORANGE</div>${c.moUSD.toFixed(1)}$ / ${c.moCDF.toLocaleString()}F`;
-        
-        document.getElementById('log-body').innerHTML = d.logs.slice().reverse().map(l=> `<tr><td>${l.h}</td><td>${l.srv}</td><td>${l.qty}</td><td>${l.cash}${l.curr}</td><td><button style="color:red; background:none; border:none; cursor:pointer;" onclick="deleteOp(${l.id})">✕</button></td></tr>`).join('');
-    }
-
-    function deleteOp(id) {
-        if(!confirm("Signaler cette opération comme une erreur ?")) return;
-        const idx = d.logs.findIndex(l => l.id === id);
-        if(idx !== -1) {
-            let op = d.logs[idx];
-            op.errTime = new Date().toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});
-            op.errBy = isAdmin ? "ADMIN" : "STAFF";
-            if(!d.errors) d.errors = [];
-            d.errors.push(op); // On archive dans la liste d'erreurs
-            d.logs.splice(idx, 1);
-            save();
-        }
-    }
-
-    function generateDetailedPDF() {
-        try {
-            if(!isAdmin) return alert("Accès réservé à l'administrateur.");
-            const s = calculateStats(); const c = s.finalC;
-            
-            let reap = { usd: 0, cdf: 0, ua: 0, uo: 0, uaf: 0, uv: 0, ma: 0, mv: 0, mo: 0 };
-            d.logs.filter(l => l.srv.startsWith("R-")).forEach(l => {
-                if(l.srv === "R-CASH-USD") reap.usd += l.qty;
-                else if(l.srv === "R-CASH-CDF") reap.cdf += l.qty;
-                else if(l.srv === "R-UA") reap.ua += l.qty;
-                else if(l.srv === "R-UO") reap.uo += l.qty;
-                else if(l.srv === "R-UAF") reap.uaf += l.qty;
-                else if(l.srv === "R-UV") reap.uv += l.qty;
-                else if(l.srv === "R-MA") reap.ma += l.qty;
-                else if(l.srv === "R-MV") reap.mv += l.qty;
-                else if(l.srv === "R-MO") reap.mo += l.qty;
-            });
-
-            let errorHtml = "";
-            if (d.errors && d.errors.length > 0) {
-                errorHtml = `
-                <h3 style="font-size:12px; background:#ffebee; color:#c62828; padding:4px; margin:10px 0 5px 0; border-left:3px solid #c62828;">4. LOGS DES ERREURS / ANNULATIONS</h3>
-                <table style="width:100%; border-collapse:collapse; font-size:9px; margin-bottom:12px;">
-                    <tr style="background:#f4f4f4;">
-                        <th style="border:1px solid #ddd; padding:4px;">Heure Op</th>
-                        <th style="border:1px solid #ddd; padding:4px;">Annulé à</th>
-                        <th style="border:1px solid #ddd; padding:4px;">Service</th>
-                        <th style="border:1px solid #ddd; padding:4px;">Valeur</th>
-                        <th style="border:1px solid #ddd; padding:4px;">Par</th>
-                    </tr>
-                    ${d.errors.map(e => `
-                        <tr>
-                            <td style="border:1px solid #ddd; padding:4px;">${e.h}</td>
-                            <td style="border:1px solid #ddd; padding:4px;">${e.errTime}</td>
-                            <td style="border:1px solid #ddd; padding:4px;">${e.srv}</td>
-                            <td style="border:1px solid #ddd; padding:4px;">${e.qty} | ${e.cash}${e.curr}</td>
-                            <td style="border:1px solid #ddd; padding:4px;">${e.errBy}</td>
-                        </tr>
-                    `).join('')}
-                </table>`;
-            }
-
-            let html = `
-                <div style="color:black; font-family:Arial, sans-serif; padding:15px; line-height:1.3;">
-                    <div style="text-align:center; border-bottom:2px solid #000; margin-bottom:10px;">
-                        <h1 style="margin:0; font-size:20px;">FKM-ENERGY SHOP</h1>
-                        <p style="margin:2px 0; font-weight:bold; font-size:12px;">RAPPORT JOURNALIER DÉTAILLÉ COMPLET</p>
-                        <p style="font-size:10px;">Généré le: ${new Date().toLocaleString()}</p>
-                    </div>
-
-                    <div style="background:#f4f4f4; padding:8px; border:1px solid #ddd; margin-bottom:12px; font-size:11px;">
-                        <b>OUVERTURE MATIN :</b><br>
-                        Cash: ${d.m.cUSD || 0}$ | ${(d.m.cCDF || 0).toLocaleString()} FC<br>
-                        Unités: A:${d.m.ua} O:${d.m.uo} Af:${d.m.uaf} V:${d.m.uv}$
-                    </div>
-
-                    <h3 style="font-size:12px; background:#eee; padding:4px; margin:10px 0 5px 0; border-left:3px solid #333;">1. VENTES UNITÉS</h3>
-                    <table style="width:100%; border-collapse:collapse; font-size:11px; margin-bottom:12px;">
-                        <tr style="background:#f9f9f9;">
-                            <th style="border:1px solid #ddd; padding:4px; text-align:left;">Réseau</th>
-                            <th style="border:1px solid #ddd; padding:4px;">Quantité</th>
-                            <th style="border:1px solid #ddd; padding:4px;">Cash Perçu</th>
-                        </tr>
-                        <tr><td style="border:1px solid #ddd; padding:4px;">Airtel</td><td style="border:1px solid #ddd; padding:4px; text-align:center;">${s.uA}</td><td style="border:1px solid #ddd; padding:4px;">${s.cashA.toLocaleString()} FC</td></tr>
-                        <tr><td style="border:1px solid #ddd; padding:4px;">Orange</td><td style="border:1px solid #ddd; padding:4px; text-align:center;">${s.uO}</td><td style="border:1px solid #ddd; padding:4px;">${s.cashO.toLocaleString()} FC</td></tr>
-                        <tr><td style="border:1px solid #ddd; padding:4px;">Africell</td><td style="border:1px solid #ddd; padding:4px; text-align:center;">${s.uAf}</td><td style="border:1px solid #ddd; padding:4px;">${s.cashAf.toLocaleString()} FC</td></tr>
-                        <tr><td style="border:1px solid #ddd; padding:4px;">Vodacom</td><td style="border:1px solid #ddd; padding:4px; text-align:center;">${s.uV.toFixed(2)}$</td><td style="border:1px solid #ddd; padding:4px;">${s.cashV.toLocaleString()} FC</td></tr>
-                    </table>
-
-                    <h3 style="font-size:12px; background:#eee; padding:4px; margin:10px 0 5px 0; border-left:3px solid #333;">2. FLUX MOBILE MONEY</h3>
-                    <table style="width:100%; border-collapse:collapse; font-size:10px; margin-bottom:12px;">
-                        <tr style="background:#f9f9f9;">
-                            <th style="border:1px solid #ddd; padding:4px;">Service</th>
-                            <th style="border:1px solid #ddd; padding:4px;">Dépôts ($ / FC)</th>
-                            <th style="border:1px solid #ddd; padding:4px;">Retraits ($ / FC)</th>
-                        </tr>
-                        <tr><td style="border:1px solid #ddd; padding:4px;">Airtel Money</td><td style="border:1px solid #ddd; padding:4px;">${s.dA.u}$ / ${s.dA.f} FC</td><td style="border:1px solid #ddd; padding:4px;">${s.rA.u}$ / ${s.rA.f} FC</td></tr>
-                        <tr><td style="border:1px solid #ddd; padding:4px;">M-Pesa (Voda)</td><td style="border:1px solid #ddd; padding:4px;">${s.dV.u}$ / ${s.dV.f} FC</td><td style="border:1px solid #ddd; padding:4px;">${s.rV.u}$ / ${s.rV.f} FC</td></tr>
-                        <tr><td style="border:1px solid #ddd; padding:4px;">Orange Money</td><td style="border:1px solid #ddd; padding:4px;">${s.dO.u}$ / ${s.dO.f} FC</td><td style="border:1px solid #ddd; padding:4px;">${s.rO.u}$ / ${s.rO.f} FC</td></tr>
-                    </table>
-
-                    <h3 style="font-size:12px; background:#eee; padding:4px; margin:10px 0 5px 0; border-left:3px solid #333;">3. RÉAPPROVISIONNEMENTS</h3>
-                    <table style="width:100%; border-collapse:collapse; font-size:10px; margin-bottom:12px;">
-                        <tr style="background:#f9f9f9;"><th style="border:1px solid #ddd; padding:4px; text-align:left;">Catégorie</th><th style="border:1px solid #ddd; padding:4px;">Valeurs Ajoutées</th></tr>
-                        <tr><td style="border:1px solid #ddd; padding:4px;">Cash (+)</td><td style="border:1px solid #ddd; padding:4px;">${reap.usd}$ | ${reap.cdf.toLocaleString()} FC</td></tr>
-                        <tr><td style="border:1px solid #ddd; padding:4px;">Unités (+)</td><td style="border:1px solid #ddd; padding:4px;">A:${reap.ua} | O:${reap.uo} | Af:${reap.uaf} | V:${reap.uv}$</td></tr>
-                        <tr><td style="border:1px solid #ddd; padding:4px;">Momo (+)</td><td style="border:1px solid #ddd; padding:4px;">A:${reap.ma}F | V:${reap.mv}F | O:${reap.mo}F</td></tr>
-                    </table>
-
-                    ${errorHtml}
-
-                    <div style="margin-top:15px; border:2px solid #000; padding:12px; background:#fffdf2;">
-                        <h3 style="margin:0 0 8px 0; font-size:14px; border-bottom:1px solid #000;">SITUATION FINALE DE CLÔTURE</h3>
-                        <div style="font-size:13px; font-weight:bold; color:#d32f2f; margin-bottom:10px;">
-                            CASH EN CAISSE : ${c.cUSD.toFixed(1)}$ | ${c.cCDF.toLocaleString()} FC
-                        </div>
-                        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; font-size:10px;">
-                            <div style="border:1px solid #ccc; padding:5px;">
-                                <b>Unités Restantes :</b><br>
-                                A: ${c.ua} | O: ${c.uo}<br>
-                                Af: ${c.uaf} | V: ${c.uv.toFixed(2)}$
-                            </div>
-                            <div style="border:1px solid #ccc; padding:5px;">
-                                <b>Balances Momo :</b><br>
-                                A: ${c.maUSD}$ / ${c.maCDF}F<br>
-                                V: ${c.mvUSD}$ / ${c.mvCDF}F<br>
-                                O: ${c.moUSD}$ / ${c.moCDF}F
-                            </div>
-                        </div>
-                        <div style="margin-top:12px; font-size:14px; color:green;"><b>BÉNÉFICE NET ESTIMÉ : ${Math.floor(s.uNet).toLocaleString()} FC</b></div>
-                    </div>
-                </div>`;
-
-            document.getElementById('report-to-print').innerHTML = html;
-            document.getElementById('modal-overlay').style.display = 'flex';
-        } catch (err) { alert("Erreur génération : " + err.message); }
-    }
-
-    function closeModal() { document.getElementById('modal-overlay').style.display = 'none'; }
-    function transferProfit() { const s = calculateStats(); if(s.uNet <= 0) return alert("Pas de gain"); d.logs.push({ id: Date.now(), h: new Date().toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'}), srv: "V-GAIN", qty: 0, cash: s.uNet, curr: "FC" }); save(); }
-    function processOp() { const srv = document.getElementById('op-service').value; const qty = parseFloat(document.getElementById('op-qty').value || 0); const cash = parseFloat(document.getElementById('op-cash').value || 0); const curr = document.getElementById('op-curr').value; if(qty === 0 && cash === 0) return; d.logs.push({ id: Date.now(), h: new Date().toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'}), srv, qty, cash, curr }); save(); document.getElementById('op-qty').value=""; document.getElementById('op-cash').value=""; }
-    function resetAll() { if(confirm("Voulez-vous vraiment effacer TOUTES les données ?")) { d = { m: {}, logs: [], errors: [] }; save(); location.reload(); } }
-    setInterval(() => { document.getElementById('clock').innerText = new Date().toLocaleTimeString(); }, 1000);
-    window.onload = render;
-    </script>
-<script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-  import { getDatabase, ref, set, onValue } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
-
-  const firebaseConfig = {
-    apiKey: "AIzaSyDO-ROEq-0FpvR44mUgkOOxoSTiXKSoBno",
-    authDomain: "mut-cabine-gestion.firebaseapp.com",
-    databaseURL: "https://mut-cabine-gestion-default-rtdb.firebaseio.com/",
-    projectId: "mut-cabine-gestion",
-    storageBucket: "mut-cabine-gestion.firebasestorage.app",
-    messagingSenderId: "634681741179",
-    appId: "1:634681741179:web:e9f3f6def7f778fe2477de"
-  };
-
-  const app = initializeApp(firebaseConfig);
-  const db = getDatabase(app);
-  const dataRef = ref(db, 'cabines/PPMCABINE/m');
-
-  // RÉCUPÉRATION : On ne remplace que si Firebase contient quelque chose
-  onValue(dataRef, (snapshot) => {
-    const remoteData = snapshot.val();
-    if (remoteData && Object.keys(remoteData).length > 0) {
-      window.d = remoteData; // On met à jour la variable globale
-      if (typeof render === "function") render();
-      console.log("Données récupérées du Cloud");
-    }
-  });
-
-  // SAUVEGARDE : Forcer l'utilisation de window.d
-  window.save = function() {
-    const dataToSave = window.d || (typeof d !== 'undefined' ? d : null);
-    
-    if (!dataToSave) {
-      console.error("Erreur : Aucune donnée à sauvegarder");
-      return;
-    }
-
-    // Backup local immédiat
-    localStorage.setItem('fkm_v11', JSON.stringify(dataToSave));
-
-    // Envoi Firebase
-    set(dataRef, dataToSave)
-      .then(() => console.log("Synchro Firebase OK"))
-      .catch((err) => console.error("Erreur Firebase:", err));
-
-    if (typeof render === "function") render();
-  };
-  <script>
   if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('sw.js')
-      .then(() => console.log("Service Worker Enregistré !"))
-      .catch(err => console.log("Erreur SW :", err));
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/sw.js')
+        .then((registration) => {
+          console.log('Service Worker enregistré avec succès ! Portée :', registration.scope);
+        })
+        .catch((error) => {
+          console.error('Échec de l\'enregistrement du Service Worker :', error);
+        });
+    });
   }
+
 </script>
 
 </body>
-    </html>
+</html>
