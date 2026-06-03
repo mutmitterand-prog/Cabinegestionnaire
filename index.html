@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="manifest" href="manifest.json">
     <title>SYSTÈME DE GESTION SCOLAIRE</title>
     <style>
         :root { 
@@ -1205,7 +1206,7 @@
         }
     }
 
-    // CORRECTION DU CALCUL : ÉVALUATION DES AVANCES ET PRIMES SPÉCIFIQUEMENT SUR LE MÊME MOIS/MOTIF
+    // CORRECTION DU CALCUL : ÉVALUATION DES AVANCES ET PRIMES SPÉCIFIQUEMENT ON LE MÊME MOIS/MOTIF
     function chargerHistoriqueStaffGlobalUI() {
         const tbody = document.getElementById('bodyHistoriqueStaffGlobal');
         let records = [];
@@ -1338,21 +1339,6 @@
     
     function resetApp() { if(confirm("ATTENTION : Cela va supprimer TOUTES les données. Confirmer ?")) { localStorage.clear(); location.reload(); } }
     function changerTaux() { tauxChange = Number(document.getElementById('tauxInput').value); localStorage.setItem('t2_taux', tauxChange); document.getElementById('displayTauxNav').innerText = "Taux: 1$ = "+tauxChange+" FC"; refreshUI(); alert("Taux mis à jour !"); }
-    <link rel="manifest" href="manifest.json">
-
-<script>
-  if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
-      navigator.serviceWorker.register('/sw.js')
-        .then((registration) => {
-          console.log('Service Worker enregistré avec succès ! Portée :', registration.scope);
-        })
-        .catch((error) => {
-          console.error('Échec de l\'enregistrement du Service Worker :', error);
-        });
-    });
-  }
-
 </script>
 
 </body>
