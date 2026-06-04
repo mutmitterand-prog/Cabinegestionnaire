@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="manifest" href="manifest.json">
     <title>SYSTÈME DE GESTION SCOLAIRE</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         :root { 
             --sidebar: #1a252f; --accent: #27ae60; --bg: #f4f7f6; 
@@ -132,7 +132,7 @@
         <div class="nav-item" onclick="askSecurity('config', this)">⚙️ Configuration</div>
         <div style="margin-top: auto; padding: 20px;">
             <p id="displayTauxNav" style="font-size: 0.7rem; color: #95a5a6; margin-bottom: 10px;">Taux: 1$ = 2250 FC</p>
-            <button onclick="resetApp()" style="background:#444; width:100%; font-size: 0.7rem; opacity: 0.5;">RÉINITIALISER TOUT</button>
+            <button onclick="executerResetSecurise()" style="background:#444; width:100%; font-size: 0.7rem; opacity: 0.5;">RÉINITIALISER TOUT</button>
         </div>
     </nav>
 
@@ -180,7 +180,7 @@
 
                 <div class="card" style="flex: 1.5; max-height: 550px; overflow-y: auto;">
                     <h3>Visualisation Rapide</h3>
-                    <input type="text" id="searchQuick" placeholder="Rechercher nom..." oninput="chargerListeRapide()" style="width: 100%; margin-bottom: 10px; font-size: 0.8rem;">
+                    <input type="text" id="searchQuick" placeholder="Rechercher matricule ou nom..." oninput="chargerListeRapide()" style="width: 100%; margin-bottom: 10px; font-size: 0.8rem;">
                     <table style="font-size: 0.75rem;">
                         <thead>
                             <tr><th>ID / Matricule</th><th>Nom Complet</th><th>Classe</th><th>Sexe</th></tr>
@@ -235,8 +235,8 @@
                     <h3>📥 Nouvel Encaissement</h3>
                     <div class="form-group" style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
                         <div style="grid-column: span 2;">
-                            <label>Élève (Recherche ou Code-barre)</label>
-                            <input type="text" id="searchPayeEleve" list="listeElevesPaye" placeholder="Scanner ou taper le nom..." onchange="autoFillEleve(this.value)">
+                            <label>Élève (Rechercher par Matricule ou Saisie)</label>
+                            <input type="text" id="searchPayeEleve" list="listeElevesPaye" placeholder="Sélectionnez le matricule de l'élève..." onchange="autoFillEleve(this.value)">
                             <datalist id="listeElevesPaye"></datalist>
                         </div>
                         <input type="text" id="payeClasse" placeholder="Classe" readonly style="background: #eee;">
@@ -332,6 +332,21 @@
                     <tbody></tbody>
                 </table>
             </div>
+            
+            <div class="card" style="border-top: 4px solid var(--finance)">
+                <h3>🖨️ Générer un Bulletin / Fiche de Paie Mensuelle</h3>
+                <div class="form-group">
+                    <select id="ficheStaffSelect"><option value="">-- Choisir un agent --</option></select>
+                    <select id="ficheMoisSelect">
+                        <option value="Septembre">Septembre</option><option value="Octobre">Octobre</option>
+                        <option value="Novembre">Novembre</option><option value="Décembre">Décembre</option>
+                        <option value="Janvier">Janvier</option><option value="Février">Février</option>
+                        <option value="Mars">Mars</option><option value="Avril">Avril</option>
+                        <option value="Mai">Mai</option><option value="Juin">Juin</option>
+                    </select>
+                    <button class="btn-finance" onclick="imprimerFicheDePaieA4()">VOIR LA FICHE DE PAIE (A4)</button>
+                </div>
+            </div>
         </section>
 
         <section id="finance" class="section" style="display:none;">
@@ -361,7 +376,7 @@
             </div>
 
             <div class="card">
-                <h3>📜 Historique des Mouvements de Caisse (Entrées/Sorties Diverses)</h3>
+                <h3>CN Suffixe des Mouvements de Caisse (Entrées/Sorties Diverses)</h3>
                 <div style="max-height: 250px; overflow-y: auto;">
                     <table id="tableMouvements">
                         <thead>
@@ -387,7 +402,7 @@
 
         <section id="rapports-eleves" class="section" style="display:none;">
             <div class="card">
-                <h3>📋 Rapports des Élèves en Ordre</h3>
+                <h3>📋 Rapports Synthétiques & États d'Insolvabilité</h3>
                 <div class="form-group" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px;">
                     <div>
                         <label style="font-size: 0.8rem; font-weight: bold;">Classe :</label>
@@ -409,8 +424,9 @@
                     <div>
                         <label style="font-size: 0.8rem; font-weight: bold;">Type Filtre :</label>
                         <select id="repTypeSelect" onchange="genererRapportElevesOrdre()">
-                            <option value="Ordre">Élèves En Ordre</option>
-                            <option value="Dette">Élèves Insolvables (Dette)</option>
+                            <option value="Ordre">Élèves En Ordre (Mois ciblé)</option>
+                            <option value="Dette">Élèves Insolvables (Mois ciblé)</option>
+                            <option value="GlobalInsolvable">⚠️ TOUS LES INSOLVABLES DE L'ANNÉE (GLOBAL)</option>
                         </select>
                     </div>
                     <div style="display:flex; align-items:flex-end;">
@@ -477,12 +493,29 @@
     </main>
 
     <script>
-    // --- 1. BASE DE DONNÉES & VARIABLES ---
+    // --- Configuration d'initialisation de Supabase ---
+    const SUPABASE_URL = "https://TON_PROJECT_ID.supabase.co"; 
+    const SUPABASE_KEY = "TON_ANON_PUBLIC_KEY";
+    let supabase = null;
+
+    try {
+        if(SUPABASE_URL !== "https://TON_PROJECT_ID.supabase.co") {
+            supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        }
+    } catch(err) { console.error("Erreur d'initialisation Supabase:", err); }
+
+    // Dictionnaire pour la conversion numérique des mois (Utile pour Supabase p.mois_comptable)
+    const dicMois = {
+        "septembre":1, "octobre":2, "novembre":3, "décembre":4,
+        "janvier":5, "février":6, "mars":7, "avril":8, "mai":9, "juin":10
+    };
+
+    // --- 1. BASE DE DONNÉES & VARIABLES LOCALES ---
     let matriculeCount = Number(localStorage.getItem('t2_mat_count')) || 1;
     let currentPin = localStorage.getItem('t2_pin') || "1234";
     let adminPass = localStorage.getItem('t2_admin') || "1234";
     let tauxChange = Number(localStorage.getItem('t2_taux')) || 2250;
-    let schoolData = JSON.parse(localStorage.getItem('t2_sdata')) || { name: "C.S. LE TREMPLIN 2", addr: "Lubumbashi, RDC", tel: "0" };
+    let schoolData = JSON.parse(localStorage.getItem('t2_sdata')) || { name: "MUTMITTSHOP", addr: "Lubumbashi, RDC", tel: "0" };
     let classes = JSON.parse(localStorage.getItem('t2_classes')) || [{cat: 2, nom: "1ère Primaire", tarif: 50}];
     let eleves = JSON.parse(localStorage.getItem('t2_eleves')) || [];
     let staff = JSON.parse(localStorage.getItem('t2_staff')) || [];
@@ -490,6 +523,7 @@
     let autresMouvements = JSON.parse(localStorage.getItem('t2_autres_mouv')) || [];
     let targetSection = ""; 
     let targetBtn = null;
+    let actionSecuriseeEnAttente = null;
 
     // --- 2. AUTHENTIFICATION ---
     function checkLogin() {
@@ -499,9 +533,44 @@
         } else { alert("Code PIN incorrect."); }
     }
 
-    function init() {
+    async function init() {
         updateSchoolUI(); remplirSelects(); refreshUI();
         document.getElementById('tauxInput').value = tauxChange;
+        if(supabase) { await chargerDepuisSupabase(); }
+    }
+
+    // --- Synchronisation descendante de Supabase vers le Front-end ---
+    async function chargerDepuisSupabase() {
+        try {
+            const { data: dbStaff, error: errStaff } = await supabase.from('staff').select('*').eq('statut', 'ACTIF');
+            if(!errStaff && dbStaff) {
+                staff = dbStaff.map(st => ({
+                    id: st.id,
+                    nom: st.nom,
+                    fonction: st.fonction,
+                    salaire_contractuel: st.salaire_contractuel,
+                    historiquePaiement: []
+                }));
+            }
+            const { data: dbPaiements, error: errPay } = await supabase.from('paiements_staff').select('*');
+            if(!errPay && dbPaiements) {
+                dbPaiements.forEach(p => {
+                    const agent = staff.find(st => st.id === p.staff_id);
+                    if(agent) {
+                        const chaineMois = Object.keys(dicMois).find(key => dicMois[key] === p.mois_comptable) || "Général";
+                        agent.historiquePaiement.push({
+                            ref: p.ref_paiement,
+                            mois: chaineMois.toUpperCase(),
+                            type: p.type_mouvement,
+                            montant: Number(p.montant),
+                            date: p.date_versement
+                        });
+                    }
+                });
+            }
+            chargerStaff();
+            actualiserSelectStaffFiches();
+        } catch(e) { console.error("Erreur lors de la synchronisation Supabase", e); }
     }
 
     // --- 3. NAVIGATION ---
@@ -511,12 +580,11 @@
         document.getElementById(id).style.display = 'block'; 
         if(btn) btn.classList.add('active'); 
         
-        // GESTION STATS GRID (VISIBILITÉ EXCLUSIVE AU RAPPORT FINANCIER)
         document.querySelector('.stats-grid').style.display = (id === 'finance') ? 'grid' : 'none';
 
         if(id === 'eleves') showSubSection('sub-nouveau');
         if(id === 'paiements') actualiserListeRecherchePaiement();
-        if(id === 'personnel') chargerStaff();
+        if(id === 'personnel') { chargerStaff(); actualiserSelectStaffFiches(); }
         if(id === 'finance') { refreshUI(); chargerTableauMouvements(); chargerHistoriqueStaffGlobalUI(); }
         if(id === 'rapports-eleves') { genererRapportElevesOrdre(); }
         if(id === 'config') chargerConfig();
@@ -557,7 +625,8 @@
             nomPere: document.getElementById('nomPere').value,
             telPere: document.getElementById('telPere').value,
             nomMere: document.getElementById('nomMere').value,
-            telMere: document.getElementById('telMere').value
+            telMere: document.getElementById('telMere').value,
+            actif: true 
         };
         if(data.nom && data.classe) {
             eleves.push(data); matriculeCount++;
@@ -580,26 +649,23 @@
 
     function chargerListeRapide() {
         const query = document.getElementById('searchQuick').value.toLowerCase();
-        const liste = eleves.filter(e => e.nom.toLowerCase().includes(query) || (e.matricule && e.matricule.toLowerCase().includes(query)));
+        const liste = eleves.filter(e => e.actif !== false && (e.nom.toLowerCase().includes(query) || (e.matricule && e.matricule.toLowerCase().includes(query))));
         document.getElementById('bodyQuickList').innerHTML = liste.slice().reverse().map(e => `
             <tr><td>${e.matricule}</td><td>${e.nom} ${e.postnom || ''}</td><td>${e.classe || 'N/A'}</td><td>${e.sexe}</td></tr>
         `).join('');
     }
 
-    // Appelé lors du changement de motif ou saisie de l'autre motif pour rafraîchir en temps réel la situation
     function declencherCalculSituationDynamique() {
-        const val = document.getElementById('searchPayeEleve').value;
-        const e = eleves.find(el => `${el.nom} ${el.postnom || ''} ${el.prenom || ''}`.trim() === val.trim());
-        if(e) {
-            chargerHistoriqueEleve(e);
-        }
+        const mat = document.getElementById('searchPayeEleve').value.trim();
+        const e = eleves.find(el => el.matricule.trim() === mat);
+        if(e) { chargerHistoriqueEleve(e); }
     }
 
     function chargerAnciens() {
         const classeFiltre = document.getElementById('filtreAncienClasse').value;
         const tbody = document.querySelector('#tableAnciens tbody');
         if(!classeFiltre) { tbody.innerHTML = "<tr><td colspan='3'>Sélectionnez une classe</td></tr>"; return; }
-        const liste = eleves.filter(e => e.classe === classeFiltre);
+        const liste = eleves.filter(e => e.classe === classeFiltre && e.actif !== false);
         tbody.innerHTML = liste.map(e => `
             <tr><td>${e.nom} ${e.postnom || ''}</td><td>${e.classe}</td>
             <td><button class="btn-main" onclick="reinscrireEleve('${e.matricule}')">Réinscrire / Transférer</button></td></tr>
@@ -614,12 +680,12 @@
 
     function chargerElevesGestion() {
         const search = document.getElementById('searchEleve').value.toLowerCase();
-        const liste = eleves.filter(e => e.nom.toLowerCase().includes(search) || e.matricule.toLowerCase().includes(search));
+        const liste = eleves.filter(e => e.actif !== false && (e.nom.toLowerCase().includes(search) || e.matricule.toLowerCase().includes(search)));
         document.querySelector('#tableElevesGestion tbody').innerHTML = liste.map(e => {
             const idx = eleves.indexOf(e);
             return `<tr><td>${e.matricule}</td><td>${e.nom} ${e.postnom || ''}</td>
             <td><button class="btn-info" onclick="ouvrirModification(${idx})">Modifier Fiche</button>
-            <button class="btn-del" onclick="suppEleve(${idx})">X</button></td></tr>`;
+            <button class="btn-del" onclick="declencherProtectionAdmin(() => suppEleve(${idx}))">X</button></td></tr>`;
         }).join('');
     }
 
@@ -668,29 +734,28 @@
     // --- 5. PAIEMENTS & REÇUS ---
     function genererReference(prefixe) {
         const d = new Date();
-        const unique = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
-        return `${prefixe}-${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}-${unique}`;
+        const dateStr = `${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}`;
+        const unique = Math.random().toString(36).substring(2, 5).toUpperCase();
+        return `${prefixe}-${dateStr}-${Date.now().toString().slice(-4)}-${unique}`;
     }
 
     function actualiserListeRecherchePaiement() {
         const datalist = document.getElementById('listeElevesPaye');
-        datalist.innerHTML = eleves.map(e => `<option value="${e.nom} ${e.postnom || ''} ${e.prenom || ''}">`).join('');
+        datalist.innerHTML = eleves.filter(e => e.actif !== false).map(e => 
+            `<option value="${e.matricule}"> ${e.nom} ${e.postnom || ''} ${e.prenom || ''} (${e.classe})</option>`
+        ).join('');
     }
 
-    function autoFillEleve(val) {
-        const e = eleves.find(el => `${el.nom} ${el.postnom || ''} ${el.prenom || ''}`.trim() === val.trim());
+    function autoFillEleve(matricule) {
+        const e = eleves.find(el => el.matricule.trim() === matricule.trim());
         if(e) { 
             document.getElementById('payeClasse').value = e.classe;
             chargerHistoriqueEleve(e);
         }
     }
 
-    // NOUVELLE AMÉLIORATION : AFFICHAGE COMPTE RENDU STRUCTURÉ, VENTILÉ ET DYNAMIQUE PAR MOIS/MOTIF SÉLECTIONNÉ
     function chargerHistoriqueEleve(e) {
-        const nomC = `${e.nom} ${e.postnom || ''} ${e.prenom || ''}`.trim();
-        const hist = tousLesPaiements.filter(p => p.nomEleve === nomC);
-        
-        // Détermination du motif actuellement sélectionné dans le formulaire
+        const hist = tousLesPaiements.filter(p => p.matricule === e.matricule);
         let motifSelectionne = document.getElementById('payeMotif').value;
         if(motifSelectionne === "Accessoires") {
             let accs = [];
@@ -700,29 +765,23 @@
             motifSelectionne = document.getElementById("autreMotif").value || "Autres Paiements";
         }
 
-        // Calcul global sur l'écolage
         const histMinervalTotal = hist.filter(p => !p.motif.includes("Tranche") && !p.motif.includes("Accessoires") && ["Septembre","Octobre","Novembre","Décembre","Janvier","Février","Mars","Avril","Mai","Juin"].includes(p.motif));
         const totalPayeUSD = histMinervalTotal.reduce((s, p) => s + p.montant, 0);
         
-        // Calcul ciblé et spécifique pour le motif ou le mois sélectionné
         const paiementsDuMotif = hist.filter(p => p.motif.toLowerCase().trim() === motifSelectionne.toLowerCase().trim());
         const totalDuMotifUSD = paiementsDuMotif.reduce((s, p) => s + p.montant, 0);
 
-        // Définir le coût théorique du motif sélectionné pour évaluer ce qu'il reste à solder
-        let totalAttenduPourCeMotif = e.tarif || 0; // Par défaut, le tarif écolage admis si c'est un mois standard
-        
-        // Si c'est un autre frais (Frais d'État, Accessoires, etc.)
+        let totalAttenduPourCeMotif = e.tarif || 0; 
         if(motifSelectionne.includes("Tranche") || motifSelectionne.includes("Accessoires") || (!["Septembre","Octobre","Novembre","Décembre","Janvier","Février","Mars","Avril","Mai","Juin"].includes(motifSelectionne))) {
-            // S'il y a déjà eu un paiement, on se base dessus, sinon 0 en attendant la saisie
             totalAttenduPourCeMotif = paiementsDuMotif.length > 0 ? paiementsDuMotif[0].montant : 0; 
         }
 
         const restePourCeMotif = totalAttenduPourCeMotif - totalDuMotifUSD;
         
-        // Injection dynamique de la situation contextuelle selon le mois choisi
         document.getElementById('statutPaiementRapide').innerHTML = `
             <div style="border-bottom:1px solid #ddd; padding-bottom:5px; margin-bottom:5px;">
-                <b>Élève :</b> ${nomC}<br>
+                <b>Élève :</b> ${e.nom} ${e.postnom || ''}<br>
+                <b>Matricule :</b> ${e.matricule}<br>
                 <b>Frais Annuel Admis :</b> ${e.tarif || 0} $<br>
                 <b>Total Écolage Déjà Versé :</b> <span style="color:green; font-weight:bold;">${totalPayeUSD.toFixed(2)} $</span>
             </div>
@@ -733,13 +792,10 @@
             </div>
         `;
 
-        // Séparation logique des lignes du tableau (Minerval vs Reste)
         const paiementsMinerval = hist.filter(p => !p.motif.includes("Accessoires") && !p.motif.includes("Tranche") && ["Septembre","Octobre","Novembre","Décembre","Janvier","Février","Mars","Avril","Mai","Juin"].includes(p.motif));
         const paiementsAnnexes = hist.filter(p => p.motif.includes("Accessoires") || p.motif.includes("Tranche") || !["Septembre","Octobre","Novembre","Décembre","Janvier","Février","Mars","Avril","Mai","Juin"].includes(p.motif));
 
         let htmlSubdivise = "";
-
-        // 1. Groupe Minerval
         htmlSubdivise += `<div class="hist-sub-title">📊 Minerval Écolage Scolaire</div>`;
         htmlSubdivise += `<table style="font-size: 0.8rem; width:100%;"><thead><tr><th>Date</th><th>Motif</th><th>Montant</th><th>Reçu</th></tr></thead><tbody>`;
         if(paiementsMinerval.length) {
@@ -751,7 +807,6 @@
         }
         htmlSubdivise += `</tbody></table>`;
 
-        // 2. Groupe Autres Frais
         htmlSubdivise += `<div class="hist-sub-title" style="color:var(--finance); background:#f3e5f5;">🛍️ Frais Connexes, Inscriptions & Annexes</div>`;
         htmlSubdivise += `<table style="font-size: 0.8rem; width:100%;"><thead><tr><th>Date</th><th>Motif</th><th>Montant</th><th>Reçu</th></tr></thead><tbody>`;
         if(paiementsAnnexes.length) {
@@ -788,15 +843,15 @@
     }
 
     function validerPaiement() {
-        const nomC = document.getElementById('searchPayeEleve').value;
+        const mat = document.getElementById('searchPayeEleve').value.trim();
         const mtOriginal = Number(document.getElementById('payeMontant').value);
         const fuseeDevise = document.getElementById('payeDevise').value;
         const dateP = document.getElementById('payeDate').value || new Date().toISOString().split('T')[0];
         
         let motif = document.getElementById('payeMotif').value;
-        const e = eleves.find(el => `${el.nom} ${el.postnom || ''} ${el.prenom || ''}`.trim() === nomC.trim());
+        const e = eleves.find(el => el.matricule.trim() === mat);
 
-        if(!e || !mtOriginal) return alert("Veuillez sélectionner un élève et un montant.");
+        if(!e || !mtOriginal) return alert("Veuillez sélectionner un élève valide et un montant.");
 
         if(motif === "Accessoires") {
             let accs = [];
@@ -807,15 +862,13 @@
         }
 
         let mtUSD = mtOriginal;
-        if(fuseeDevise === "CDF") {
-            mtUSD = mtOriginal / tauxChange;
-        }
+        if(fuseeDevise === "CDF") { mtUSD = mtOriginal / tauxChange; }
 
         const ref = genererReference('REC');
         const p = { 
             id: Date.now(), 
             ref: ref,
-            nomEleve: nomC, 
+            nomEleve: `${e.nom} ${e.postnom || ''} ${e.prenom || ''}`.trim(), 
             matricule: e.matricule,
             classe: e.classe,
             motif: motif, 
@@ -826,9 +879,7 @@
         };
 
         tousLesPaiements.push(p);
-        sauvegarder();
-        refreshUI();
-        autoFillEleve(nomC);
+        sauvegarder(); refreshUI(); autoFillEleve(mat);
         
         document.querySelectorAll('.acc-check').forEach(c => c.checked = false);
         document.getElementById("autreMotif").value = "";
@@ -901,6 +952,7 @@
                 <div class="receipt-body" style="padding:10px 0;">
                     <div class="receipt-row"><span>DATE :</span> <b>${data.date}</b></div>
                     <div class="receipt-row"><span>NOM COMPLET :</span> <b>${cible === 'ÉLÈVE' ? data.nomEleve : data.nom}</b></div>
+                    ${cible === 'ÉLÈVE' ? `<div class="receipt-row"><span>MATRICULE :</span> <b>${data.matricule}</b></div>` : ''}
                     ${cible === 'ÉLÈVE' ? `<div class="receipt-row"><span>CLASSE :</span> <b>${data.classe}</b></div>` : ''}
                     <div class="receipt-row"><span>MOTIF / LIBELLÉ :</span> <b>${cible === 'ÉLÈVE' ? data.motif : data.typeMouvement}</b></div>
                     
@@ -927,9 +979,7 @@
         document.getElementById('previewOverlay').style.display = 'flex';
     }
 
-    function fermerApercu() {
-        document.getElementById('previewOverlay').style.display = 'none';
-    }
+    function fermerApercu() { document.getElementById('previewOverlay').style.display = 'none'; }
 
     // --- 6. MOUVEMENTS DE CAISSE ---
     function ajouterMouvement(type) {
@@ -950,22 +1000,44 @@
         document.getElementById('bodyMouvements').innerHTML = autresMouvements.slice().reverse().map((m, i) => `
             <tr><td>${m.date}</td><td style="color:${m.type==='ENTREE'?'green':'red'}">${m.type}</td>
             <td>${m.libelle}</td><td>${m.montant} $</td><td><small>${m.ref}</small></td>
-            <td><button class="btn-del" onclick="supprimerMouvement(${autresMouvements.length-1-i})">X</button></td></tr>
+            <td><button class="btn-del" onclick="declencherProtectionAdmin(() => supprimerMouvement(${autresMouvements.length-1-i}))">X</button></td></tr>
         `).join('');
     }
 
-    function supprimerMouvement(idx) { if(confirm("Supprimer ce mouvement ?")) { autresMouvements.splice(idx,1); localStorage.setItem('t2_autres_mouv', JSON.stringify(autresMouvements)); refreshUI(); chargerTableauMouvements(); } }
+    function supprimerMouvement(idx) { 
+        autresMouvements.splice(idx,1); 
+        localStorage.setItem('t2_autres_mouv', JSON.stringify(autresMouvements)); 
+        refreshUI(); chargerTableauMouvements(); 
+        alert("Mouvement supprimé.");
+    }
 
-    // --- 7. SYSTÈME, CALCULS & CONFIG ---
+    // --- 7. ACCÈS SÉCURISÉ ---
+    function declencherProtectionAdmin(callbackAction) {
+        actionSecuriseeEnAttente = callbackAction;
+        document.getElementById('overlayTitle').innerText = "🔒 ACTION SÉCURISÉE";
+        document.getElementById('adminPassInput').value = "";
+        document.getElementById('financeOverlay').style.display = 'flex';
+        targetSection = "EXEC_PROTECTED";
+    }
+
+    function executerResetSecurise() {
+        declencherProtectionAdmin(() => {
+            if(confirm("ATTENTION CRITIQUE : Cela va détruire l'intégralité absolue des données configurées. Confirmer ?")) {
+                localStorage.clear();
+                location.reload();
+            }
+        });
+    }
+
+    // --- 8. CALCULS DES TOTAUX ET BILANS ---
     function refreshUI() {
-        document.getElementById('statTotalEleves').innerText = eleves.length;
+        const effectifActif = eleves.filter(e => e.actif !== false).length;
+        document.getElementById('statTotalEleves').innerText = effectifActif;
         document.getElementById('statTaux').innerText = tauxChange + " FC";
         
-        // RECETTES TOTALES ÉLÈVES SANS AUCUNE FUITE DE FRAIS COMPTABLE
         const recScol = tousLesPaiements.reduce((s, p) => s + p.montant, 0);
-        
-        const ent = autresMouvements.filter(m => m.type === 'ENTREE').reduce((s, m) => s + m.montant, 0);
-        const sorMouv = autresMouvements.filter(m => m.type === 'SORTIE').reduce((s, m) => s + m.montant, 0);
+        const ent = ancients_ent = autresMouvements.filter(m => m.type === 'ENTREE').reduce((s, m) => s + m.montant, 0);
+        const sorMouv = ancients_sor = autresMouvements.filter(m => m.type === 'SORTIE').reduce((s, m) => s + m.montant, 0);
         
         let totalAvances = 0;
         staff.forEach(st => {
@@ -984,11 +1056,10 @@
         if(document.getElementById('finTotalMinerval')) {
             document.getElementById('finTotalMinerval').innerText = recScol.toFixed(2);
             document.getElementById('finTotalAvances').innerText = totalAvances.toFixed(2);
-            document.getElementById('finMasseSal').innerText = staff.reduce((s, st) => s + st.salaire, 0).toFixed(2);
+            document.getElementById('finMasseSal').innerText = staff.reduce((s, st) => s + (st.salaire_contractuel || st.salaire || 0), 0).toFixed(2);
             document.getElementById('finBilanNet').innerText = caisseNet.toFixed(2) + " $";
             document.getElementById('finBilanFC').innerText = (caisseNet * tauxChange).toLocaleString() + " FC";
             
-            // VENTILATION DU LIVRE DE REVENUE CENTRAL VISIBLE DANS L'ONGLET FINANCE
             const recMinerval = tousLesPaiements.filter(p => !p.motif.includes("Tranche") && !p.motif.includes("Accessoires") && ["Septembre","Octobre","Novembre","Décembre","Janvier","Février","Mars","Avril","Mai","Juin"].includes(p.motif)).reduce((s,p) => s + p.montant, 0);
             const recEtat = tousLesPaiements.filter(p => p.motif.includes("Tranche")).reduce((s,p) => s + p.montant, 0);
             const recAccessoires = tousLesPaiements.filter(p => p.motif.includes("Accessoires")).reduce((s,p) => s + p.montant, 0);
@@ -1004,7 +1075,6 @@
                 <div style="display:flex; justify-content:space-between; padding:4px 0;"><span>🏫 Minerval Général :</span><b>${recMinerval.toFixed(2)} $</b></div>
                 <div style="display:flex; justify-content:space-between; padding:4px 0;"><span>🇨🇩 Frais de l'État :</span><b>${recEtat.toFixed(2)} $</b></div>
                 <div style="display:flex; justify-content:space-between; padding:4px 0;"><span>👕 Accessoires Scolaires :</span><b>${recAccessoires.toFixed(2)} $</b></div>
-                <div style="display:flex; justify-content:space-between; padding:4px 0;"><span>📦 Autres Versements Annexes :</span><b>${recAutresPaiements.toFixed(2)} $</b></div>
                 <div style="display:flex; justify-content:space-between; padding:4px 0; border-top:1px dashed #ccc; margin-top:5px; color:green; font-weight:bold;"><span>📈 Entrées Diverses (Caisse) :</span><b>${ent.toFixed(2)} $</b></div>
             `;
         }
@@ -1017,7 +1087,6 @@
         const recMinerval = tousLesPaiements.filter(p => !p.motif.includes("Tranche") && !p.motif.includes("Accessoires") && ["Septembre","Octobre","Novembre","Décembre","Janvier","Février","Mars","Avril","Mai","Juin"].includes(p.motif)).reduce((s,p) => s + p.montant, 0);
         const recEtat = tousLesPaiements.filter(p => p.motif.includes("Tranche")).reduce((s,p) => s + p.montant, 0);
         const recAccessoires = tousLesPaiements.filter(p => p.motif.includes("Accessoires")).reduce((s,p) => s + p.montant, 0);
-        
         const recAutresPaiements = tousLesPaiements.reduce((s,p) => {
             const m = p.motif;
             if(!m.includes("Tranche") && !m.includes("Accessoires") && !["Septembre","Octobre","Novembre","Décembre","Janvier","Février","Mars","Avril","Mai","Juin"].includes(m)) {
@@ -1026,7 +1095,7 @@
             return s;
         }, 0);
 
-        const ent = ancients_mouv = autresMouvements.filter(m => m.type === 'ENTREE').reduce((s, m) => s + m.montant, 0);
+        const ent = autresMouvements.filter(m => m.type === 'ENTREE').reduce((s, m) => s + m.montant, 0);
         const sorMouv = autresMouvements.filter(m => m.type === 'SORTIE').reduce((s, m) => s + m.montant, 0);
         
         let totalAvances = 0;
@@ -1068,10 +1137,6 @@
                     <br>
                     <span style="font-size:1.4rem; font-weight:bold; color:#555;"> soit ${(netCaisse * tauxChange).toLocaleString()} CDF</span>
                 </div>
-                
-                <div style="margin-top:5px; text-align:right; font-size:0.8rem; font-style:italic;">
-                    Généré électroniquement par la direction générale.
-                </div>
             </div>
         `;
         document.getElementById('rapportContent').innerHTML = html;
@@ -1095,7 +1160,7 @@
     function chargerConfig() {
         document.querySelector('#tableConfigClasses tbody').innerHTML = classes.map((c, i) => `
             <tr><td>${c.cat}</td><td>${c.nom}</td><td>${c.tarif} $</td>
-            <td><button class="btn-del" onclick="supprimerClasse(${i})">X</button></td></tr>
+            <td><button class="btn-del" onclick="declencherProtectionAdmin(() => supprimerClasse(${i}))">X</button></td></tr>
         `).join('');
         document.getElementById('schoolNameInput').value = schoolData.name;
         document.getElementById('schoolAddress').value = schoolData.addr;
@@ -1108,7 +1173,7 @@
     }
 
     function supprimerClasse(i) { classes.splice(i,1); localStorage.setItem('t2_classes', JSON.stringify(classes)); remplirSelects(); chargerConfig(); }
-    function suppEleve(i) { if(confirm("Supprimer définitivement cet élève ?")) { eleves.splice(i,1); sauvegarder(); chargerElevesGestion(); refreshUI(); } }
+    function suppEleve(i) { eleves[i].actif = false; sauvegarder(); chargerElevesGestion(); refreshUI(); alert("Élève archivé."); }
     function updateSchoolUI() { 
         document.getElementById('navSchoolName').innerText = schoolData.name; 
         document.getElementById('loginSchoolName').innerText = schoolData.name; 
@@ -1120,13 +1185,21 @@
         schoolData.addr = document.getElementById('schoolAddress').value;
         schoolData.tel = document.getElementById('schoolPhone').value;
         localStorage.setItem('t2_sdata', JSON.stringify(schoolData));
-        updateSchoolUI();
-        alert("Coordonnées mises à jour !");
+        updateSchoolUI(); alert("Coordonnées mises à jour !");
     }
 
-    function askSecurity(s, b) { targetSection = s; targetBtn = b; document.getElementById('financeOverlay').style.display = 'flex'; }
+    function askSecurity(s, b) { targetSection = s; targetBtn = b; document.getElementById('overlayTitle').innerText = "🔑 DIRECTION"; document.getElementById('adminPassInput').value=""; document.getElementById('financeOverlay').style.display = 'flex'; }
     function closeFinance() { document.getElementById('financeOverlay').style.display = 'none'; }
-    function checkAdminAccess() { if(document.getElementById('adminPassInput').value === adminPass) { closeFinance(); showSection(targetSection, targetBtn); } else { alert("Mot de passe incorrect"); } }
+    function changerTaux() { tauxChange = Number(document.getElementById('tauxInput').value); localStorage.setItem('t2_taux', tauxChange); document.getElementById('displayTauxNav').innerText = "Taux: 1$ = " + tauxChange + " FC"; refreshUI(); alert("Taux mis à jour !"); }
+
+    function checkAdminAccess() { 
+        if(document.getElementById('adminPassInput').value === adminPass) { 
+            closeFinance(); 
+            if(targetSection === "EXEC_PROTECTED" && actionSecuriseeEnAttente) {
+                actionSecuriseeEnAttente(); actionSecuriseeEnAttente = null;
+            } else { showSection(targetSection, targetBtn); }
+        } else { alert("Mot de passe Administrateur incorrect."); } 
+    }
 
     function changerPinSecurise() {
         let oldP = document.getElementById('oldPin').value;
@@ -1134,8 +1207,7 @@
         let confP = document.getElementById('confirmPin').value;
         if(oldP !== currentPin) return alert("Ancien PIN erroné.");
         if(newP !== confP || !newP) return alert("Confirmation invalide.");
-        currentPin = newP; localStorage.setItem('t2_pin', currentPin);
-        alert("PIN modifié !");
+        currentPin = newP; localStorage.setItem('t2_pin', currentPin); alert("PIN modifié !");
     }
 
     function changerAdminSecurise() {
@@ -1144,69 +1216,93 @@
         let confA = document.getElementById('confirmAdmin').value;
         if(oldA !== adminPass) return alert("Ancien mot de passe erroné.");
         if(newA !== confA || !newA) return alert("Confirmation invalide.");
-        adminPass = newA; localStorage.setItem('t2_admin', adminPass);
-        alert("Mot de passe admin modifié !");
+        adminPass = newA; localStorage.setItem('t2_admin', adminPass); alert("Mot de passe admin modifié !");
     }
 
-    // --- 8. PERSONNEL (GESTION AVANCÉE AVEC SAISIE MANUELLE ET RESTE DU CORRECT) ---
-    function ajouterStaff() {
+    // --- 9. PERSONNEL & SUPABASE SYNC ---
+    async function ajouterStaff() {
         const nom = document.getElementById('staffNom').value;
         const fonction = document.getElementById('staffFonction').value || "Non précisée";
         const sal = Number(document.getElementById('staffSalaire').value);
         if(nom && sal) {
-            staff.push({ nom, fonction, salaire: sal, historiquePaiement: [] });
-            sauvegarder(); chargerStaff();
+            let localId = crypto.randomUUID();
+            let nouvelAgent = { id: localId, nom, fonction, salaire_contractuel: sal, historiquePaiement: [] };
+            
+            if(supabase) {
+                const { data, error } = await supabase.from('staff').insert([{
+                    id: localId, nom, fonction, salaire_contractuel: sal, statut: 'ACTIF'
+                }]).select();
+                if(error) { alert("Erreur d'insertion Supabase, enregistrement local uniquement."); }
+            }
+            
+            staff.push(nouvelAgent); sauvegarder(); chargerStaff(); actualiserSelectStaffFiches();
             document.getElementById('staffNom').value = ""; document.getElementById('staffFonction').value = ""; document.getElementById('staffSalaire').value = "";
         }
+    }
+
+    function actualiserSelectStaffFiches() {
+        document.getElementById('ficheStaffSelect').innerHTML = '<option value="">-- Choisir un agent --</option>' + staff.map((st, i) => `
+            <option value="${i}">${st.nom} (${st.fonction})</option>
+        `).join('');
     }
 
     function chargerStaff() {
         const tbody = document.querySelector('#tableStaff tbody');
         tbody.innerHTML = staff.map((st, i) => {
+            const baseSal = Number(st.salaire_contractuel || st.salaire || 0);
             const stAvances = st.historiquePaiement ? st.historiquePaiement.filter(p => p.type === 'AVANCE').reduce((s, p) => s + p.montant, 0) : 0;
             const stPrimes = st.historiquePaiement ? st.historiquePaiement.filter(p => p.type === 'PRIME').reduce((s, p) => s + p.montant, 0) : 0;
-            
-            const net = st.salaire + stPrimes - stAvances;
-            return `<tr><td><b>${st.nom}</b></td><td><small>${st.fonction || 'Non spécifiée'}</small></td><td>${st.salaire} $</td><td style="color:red">-${stAvances} $</td>
+            const net = baseSal + stPrimes - stAvances;
+            return `<tr><td><b>${st.nom}</b></td><td><small>${st.fonction || 'Non spécifiée'}</small></td><td>${baseSal} $</td><td style="color:red">-${stAvances} $</td>
                 <td style="font-weight:bold; color:var(--accent)">${net} $</td>
                 <td><button class="btn-info" onclick="genererPaie(${i}, 'avance')">💸 Avance</button>
                     <button class="btn-main" onclick="genererPaie(${i}, 'prime')">🎁 Prime</button>
-                    <button class="btn-del" onclick="supprimerStaff(${i})">X</button></td></tr>`;
+                    <button class="btn-del" onclick="declencherProtectionAdmin(() => supprimerStaff(${i}))">X</button></td></tr>`;
         }).join('');
     }
 
-    function genererPaie(idx, type) {
-        const mois = prompt("Pour quel mois ou motif ? (Ex: Septembre, Octobre, Mai, Bonus...)");
+    async function genererPaie(idx, type) {
+        const mois = prompt("Pour quel mois ou motif ? (Ex: Septembre, Octobre, Mai...)");
         if(!mois) return;
         const montant = Number(prompt(`Montant de la ${type} pour ${staff[idx].nom} ($) :`));
         
         if(montant > 0) {
             if(!staff[idx].historiquePaiement) staff[idx].historiquePaiement = [];
-            
             const ref = genererReference('STAFF');
+            const dateDuJour = new Date().toISOString().split('T')[0];
+
+            if(supabase) {
+                let codeMoisNum = dicMois[mois.toLowerCase().trim()] || 1;
+                let anneeEnCours = new Date().getFullYear();
+                
+                const { error } = await supabase.from('paiements_staff').insert([{
+                    staff_id: staff[idx].id,
+                    ref_paiement: ref,
+                    date_versement: dateDuJour,
+                    mois_comptable: codeMoisNum,
+                    annee_comptable: anneeEnCours,
+                    type_mouvement: type.toUpperCase(),
+                    montant: montant,
+                    mode_paiement: 'CASH',
+                    commentaire: `Généré depuis l'application scolaire pour le motif : ${mois}`
+                }]);
+                if(error) { console.error("Erreur d'insertion transactionnelle Supabase:", error); }
+            }
+
             staff[idx].historiquePaiement.push({
-                ref: ref,
-                mois: mois,
-                type: type.toUpperCase(),
-                montant: montant,
-                date: new Date().toLocaleDateString('fr-FR')
+                ref: ref, mois: mois, type: type.toUpperCase(), montant: montant, date: dateDuJour
             });
             
             sauvegarder(); chargerStaff(); refreshUI();
             
             if(confirm("Action enregistrée. Voir l'aperçu de la pièce de caisse ?")) {
                 imprimerRecu({
-                    ref: ref, 
-                    nom: staff[idx].nom, 
-                    typeMouvement: `${type.toUpperCase()} (${mois})`, 
-                    montant: montant, 
-                    date: new Date().toLocaleDateString('fr-FR')
+                    ref: ref, nom: staff[idx].nom, typeMouvement: `${type.toUpperCase()} (${mois})`, montant: montant, date: dateDuJour
                 }, "STAFF");
             }
         }
     }
 
-    // CORRECTION DU CALCUL : ÉVALUATION DES AVANCES ET PRIMES SPÉCIFIQUEMENT ON LE MÊME MOIS/MOTIF
     function chargerHistoriqueStaffGlobalUI() {
         const tbody = document.getElementById('bodyHistoriqueStaffGlobal');
         let records = [];
@@ -1215,71 +1311,164 @@
             if(st.historiquePaiement) {
                 st.historiquePaiement.forEach(p => {
                     records.push({
-                        date: p.date,
-                        nom: st.nom,
-                        mois: p.mois,
-                        type: p.type,
-                        montant: p.montant,
-                        ref: p.ref,
-                        salaireBase: st.salaire,
-                        historiqueComplet: st.historiquePaiement
+                        date: p.date, nom: st.nom, mois: p.mois, type: p.type, montant: p.montant, ref: p.ref, salaireBase: Number(st.salaire_contractuel || st.salaire || 0)
                     });
                 });
             }
         });
 
         if(records.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="6">Aucun historique disponible</td></tr>';
-            return;
+            tbody.innerHTML = '<tr><td colspan="6">Aucun historique disponible</td></tr>'; return;
         }
 
-        // Tri décroissant pour afficher les derniers mouvements en premier
-        records.sort((a,b) => b.date.localeCompare(a.date));
+        const parseDateStr = (str) => {
+            const p = str.split('-'); return p.length === 3 ? new Date(p[0], p[1] - 1, p[2]) : new Date(str);
+        };
+
+        records.sort((a, b) => parseDateStr(a.date) - parseDateStr(b.date));
+        let banqueSuiviSoldes = {}; 
+
+        records.forEach(r => {
+            if (r.type === 'PRIME') { r.resteDuCalculé = 0; } 
+            else {
+                const cleMoisEmploye = `${r.nom.toLowerCase().trim()}-${r.mois.toLowerCase().trim()}`;
+                if (!(cleMoisEmploye in banqueSuiviSoldes)) { banqueSuiviSoldes[cleMoisEmploye] = r.salaireBase; }
+                banqueSuiviSoldes[cleMoisEmploye] -= r.montant;
+                r.resteDuCalculé = banqueSuiviSoldes[cleMoisEmploye];
+            }
+        });
+
+        records.sort((a, b) => parseDateStr(b.date) - parseDateStr(a.date));
 
         tbody.innerHTML = records.map(r => {
-            // Filtrer le calcul du cumul uniquement pour le même mois ou motif exact
-            const cumulAvancesDuMois = r.historiqueComplet.filter(x => x.type === 'AVANCE' && x.mois.toLowerCase().trim() === r.mois.toLowerCase().trim()).reduce((s, x) => s + x.montant, 0);
-            const cumulPrimesDuMois = r.historiqueComplet.filter(x => x.type === 'PRIME' && x.mois.toLowerCase().trim() === r.mois.toLowerCase().trim()).reduce((s, x) => s + x.montant, 0);
-            
-            // Reste à payer = (Salaire de base + Primes du mois) - Avances obtenues sur ce même mois
-            const resteDuMois = r.salaireBase + cumulPrimesDuMois - cumulAvancesDuMois;
-
+            let couleurReste = r.resteDuCalculé > 0 ? '#e74c3c' : '#27ae60';
             return `<tr>
-                <td>${r.date}</td>
-                <td><b>${r.nom}</b></td>
-                <td>${r.mois}</td>
-                <td style="color:${r.type==='AVANCE'?'red':'green'}">${r.type}</td>
-                <td><b>${r.montant} $</b></td>
-                <td style="font-weight:bold; color:${resteDuMois > 0 ? '#e74c3c' : '#27ae60'}">${resteDuMois} $</td>
+                <td>${r.date}</td><td><b>${r.nom}</b></td><td>${r.mois}</td>
+                <td style="color:${r.type === 'AVANCE' ? 'red' : 'green'}">${r.type}</td>
+                <td><b>${r.montant} $</b></td><td style="font-weight:bold; color:${couleurReste}">${r.resteDuCalculé} $</td>
             </tr>`;
         }).join('');
     }
 
-    function supprimerStaff(i) { if(confirm("Supprimer ce membre du staff ?")) { staff.splice(i,1); sauvegarder(); chargerStaff(); refreshUI(); } }
+    // --- 10. REQUÊTES DES BULLETINS DE PAIE ---
+    function imprimerFicheDePaieA4() {
+        const idx = document.getElementById('ficheStaffSelect').value;
+        const mois = document.getElementById('ficheMoisSelect').value;
+        if(!idx || !mois) return alert("Veuillez sélectionner un employé ainsi qu'un mois comptable.");
+
+        const st = staff[idx];
+        const baseSal = Number(st.salaire_contractuel || st.salaire || 0);
+        const histMois = st.historiquePaiement ? st.historiquePaiement.filter(p => p.mois.toLowerCase().trim() === mois.toLowerCase().trim()) : [];
+        
+        const totalAvances = histMois.filter(p => p.type === 'AVANCE').reduce((s, p) => s + p.montant, 0);
+        const totalPrimes = histMois.filter(p => p.type === 'PRIME').reduce((s, p) => s + p.montant, 0);
+        const netPaye = baseSal + totalPrimes - totalAvances;
+        const resteDu = baseSal - totalAvances;
+
+        document.getElementById('recuContent').style.display = 'none';
+        document.getElementById('rapportContent').style.display = 'block';
+
+        let html = `
+            <div class="receipt-box" style="border: 2px solid #000; padding: 25px;">
+                <div class="receipt-header">
+                    <h2 style="text-transform: uppercase; margin:0;">${schoolData.name}</h2>
+                    <p>${schoolData.addr}</p>
+                    <div style="margin-top:15px; border:2px solid #000; padding:10px; display:inline-block; font-weight:bold; font-size:1.3rem; background:#f9f9f9;">
+                        BULLETIN / FICHE DE PAIE - MOIS DE ${mois.toUpperCase()}
+                    </div>
+                </div>
+                <div style="margin: 20px 0; display:grid; grid-template-columns:1fr 1fr; gap:10px; border-bottom:1px solid #000; padding-bottom:15px;">
+                    <div><b>NOM DE L'AGENT :</b> ${st.nom}</div>
+                    <div><b>FONCTION :</b> ${st.fonction}</div>
+                    <div><b>DATE D'ÉDITION :</b> ${new Date().toLocaleDateString('fr-FR')}</div>
+                    <div><b>MONNAIE :</b> USD ($)</div>
+                </div>
+                <table style="width:100%; border-collapse:collapse; margin-top:15px;">
+                    <thead>
+                        <tr style="background:#eee;">
+                            <th style="border:1px solid #000; padding:8px;">LIBELLÉ DES ÉLÉMENTS DE SALAIRE</th>
+                            <th style="border:1px solid #000; padding:8px; text-align:right;">GAINS (+)</th>
+                            <th style="border:1px solid #000; padding:8px; text-align:right;">RETENUES (-)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td style="border:1px solid #000; padding:10px;">Salaire de Base Contractuel</td>
+                            <td style="border:1px solid #000; padding:10px; text-align:right;">${baseSal.toFixed(2)} $</td>
+                            <td style="border:1px solid #000; padding:10px; text-align:right;">0.00 $</td>
+                        </tr>
+                        <tr>
+                            <td style="border:1px solid #000; padding:10px;">Cumul des Primes Accordées</td>
+                            <td style="border:1px solid #000; padding:10px; text-align:right; color:green;">+${totalPrimes.toFixed(2)} $</td>
+                            <td style="border:1px solid #000; padding:10px; text-align:right;">0.00 $</td>
+                        </tr>
+                        <tr>
+                            <td style="border:1px solid #000; padding:10px;">Acomptes & Avances sur salaire perçus</td>
+                            <td style="border:1px solid #000; padding:10px; text-align:right;">0.00 $</td>
+                            <td style="border:1px solid #000; padding:10px; text-align:right; color:red;">-${totalAvances.toFixed(2)} $</td>
+                        </tr>
+                        <tr style="background:#f9f9f9; font-weight:bold;">
+                            <td style="border:1px solid #000; padding:12px; font-size:1.1rem;">NET NET À PAYER DIRECT</td>
+                            <td colspan="2" style="border:1px solid #000; padding:12px; text-align:right; font-size:1.3rem; color:var(--accent);">${netPaye.toFixed(2)} $</td>
+                        </tr>
+                    </tbody>
+                </table>
+                <div style="margin-top:15px; background:#fff3e0; padding:10px; border:1px solid #ffe0b2; font-size:0.9rem; font-weight:bold;">
+                    📌 STATUT DU SALAIRE MENSUEL : ${resteDu <= 0 ? '<span style="color:green;">MOIS COMPLÈTEMENT SOLDÉ (0$ DU)</span>' : `<span style="color:red;">RESTE À DEVOIR À L'AGENT : ${resteDu.toFixed(2)} $</span>`}
+                </div>
+                <div style="margin-top:40px; display:flex; justify-content:space-between; text-align:center;">
+                    <div style="width:40%; border-top:1px solid #000; padding-top:5px; font-size:0.9rem;">Signature de l'Employé</div>
+                    <div style="width:40%; border-top:1px solid #000; padding-top:5px; font-size:0.9rem;">L'Administrateur Gestionnaire</div>
+                </div>
+            </div>
+        `;
+        document.getElementById('rapportContent').innerHTML = html;
+        document.getElementById('previewOverlay').style.display = 'flex';
+    }
+
+    async function supprimerStaff(i) {
+        if(supabase) {
+            const { error } = await supabase.from('staff').update({ statut: 'INACTIF' }).eq('id', staff[i].id);
+            if(error) { console.error("Erreur de suppression Supabase:", error); }
+        }
+        staff.splice(i,1); sauvegarder(); chargerStaff(); actualiserSelectStaffFiches(); refreshUI(); alert("Membre du personnel supprimé.");
+    }
     
-    // --- 9. RAPPORT ÉLÈVES EN ORDRE / INSOLVABLES ---
+    // --- 11. GESTION DES RAPPORTS COMPLETS ---
     function genererRapportElevesOrdre() {
         const classeTarget = document.getElementById('repClasseSelect').value;
         const motifTarget = document.getElementById('repMoisSelect').value;
         const typeFiltre = document.getElementById('repTypeSelect').value;
         const tbody = document.getElementById('bodyRapportEleves');
 
-        if(!classeTarget) {
-            tbody.innerHTML = '<tr><td colspan="4">Veuillez d\'abord configurer une classe.</td></tr>';
-            return;
-        }
+        if(!classeTarget) { tbody.innerHTML = '<tr><td colspan="4">Veuillez configurer une classe.</td></tr>'; return; }
 
-        const elevesClasse = eleves.filter(e => e.classe === classeTarget);
+        const elevesClasse = eleves.filter(e => e.classe === classeTarget && e.actif !== false);
         let html = "";
 
         elevesClasse.forEach(e => {
-            const nomC = `${e.nom} ${e.postnom || ''} ${e.prenom || ''}`.trim();
-            const aPaye = tousLesPaiements.some(p => p.nomEleve === nomC && p.motif.toLowerCase().includes(motifTarget.toLowerCase()));
-            
-            if(typeFiltre === "Ordre" && aPaye) {
-                html += `<tr><td>${e.matricule}</td><td>${nomC}</td><td>${e.classe}</td><td style="color:green; font-weight:bold;">🟢 EN ORDRE</td></tr>`;
-            } else if(typeFiltre === "Dette" && !aPaye) {
-                html += `<tr><td>${e.matricule}</td><td>${nomC}</td><td>${e.classe}</td><td style="color:red; font-weight:bold;">🔴 INSOLVABLE</td></tr>`;
+            if(typeFiltre === "GlobalInsolvable") {
+                const mesPaiements = tousLesPaiements.filter(p => p.matricule === e.matricule);
+                const totalPayeAnnee = mesPaiements.reduce((sum, p) => sum + p.montant, 0);
+                const totalAttenduAnnee = (e.tarif || 0) * 10; 
+                const detteGlobale = totalAttenduAnnee - totalPayeAnnee;
+
+                if(detteGlobale > 0) {
+                    html += `<tr><td>${e.matricule}</td><td><b>${e.nom} ${e.postnom || ''}</b></td><td>${e.classe}</td>
+                    <td style="color:#e74c3c; font-weight:bold;">⚠️ DETTE GLOBALE : ${detteGlobale.toFixed(2)}$ <small>(Payé: ${totalPayeAnnee.toFixed(2)}$ / Attendu: ${totalAttenduAnnee}$)</small></td></tr>`;
+                }
+            } else {
+                const paiementsDuMotif = tousLesPaiements.filter(p => p.matricule === e.matricule && p.motif.toLowerCase().includes(motifTarget.toLowerCase()));
+                const totalPayePourCeMotif = paiementsDuMotif.reduce((s, p) => s + p.montant, 0);
+                const tarifAttendu = e.tarif || 0;
+                const estEnOrdre = totalPayePourCeMotif >= tarifAttendu;
+                
+                if(typeFiltre === "Ordre" && estEnOrdre) {
+                    html += `<tr><td>${e.matricule}</td><td>${e.nom} ${e.postnom || ''}</td><td>${e.classe}</td><td style="color:#27ae60; font-weight:bold;">🟢 EN ORDRE (${totalPayePourCeMotif}$)</td></tr>`;
+                } else if(typeFiltre === "Dette" && !estEnOrdre) {
+                    const resteA_Payer = tarifAttendu - totalPayePourCeMotif;
+                    html += `<tr><td>${e.matricule}</td><td>${e.nom} ${e.postnom || ''}</td><td>${e.classe}</td><td style="color:#e74c3c; font-weight:bold;">🔴 INSOLVABLE (Reste ${resteA_Payer.toFixed(2)}$)</td></tr>`;
+                }
             }
         });
 
@@ -1293,26 +1482,42 @@
         const classeTarget = document.getElementById('repClasseSelect').value;
         const motifTarget = document.getElementById('repMoisSelect').value;
         const typeFiltre = document.getElementById('repTypeSelect').value;
-        const elevesClasse = eleves.filter(e => e.classe === classeTarget);
+        const elevesClasse = eleves.filter(e => e.classe === classeTarget && e.actif !== false);
 
         let trs = "";
         elevesClasse.forEach(e => {
-            const nomC = `${e.nom} ${e.postnom || ''} ${e.prenom || ''}`.trim();
-            const aPaye = tousLesPaiements.some(p => p.nomEleve === nomC && p.motif.toLowerCase().includes(motifTarget.toLowerCase()));
-            
-            if(typeFiltre === "Ordre" && aPaye) {
-                trs += `<tr><td style="border:1px solid #000; padding:8px;">${e.matricule}</td><td style="border:1px solid #000; padding:8px;">${nomC}</td><td style="border:1px solid #000; padding:8px; color:green;">EN ORDRE</td></tr>`;
-            } else if(typeFiltre === "Dette" && !aPaye) {
-                trs += `<tr><td style="border:1px solid #000; padding:8px;">${e.matricule}</td><td style="border:1px solid #000; padding:8px;">${nomC}</td><td style="border:1px solid #000; padding:8px; color:red;">INSOLVABLE</td></tr>`;
+            if(typeFiltre === "GlobalInsolvable") {
+                const mesPaiements = tousLesPaiements.filter(p => p.matricule === e.matricule);
+                const totalPayeAnnee = mesPaiements.reduce((sum, p) => sum + p.montant, 0);
+                const totalAttenduAnnee = (e.tarif || 0) * 10;
+                const detteGlobale = totalAttenduAnnee - totalPayeAnnee;
+
+                if(detteGlobale > 0) {
+                    trs += `<tr><td style="border:1px solid #000; padding:8px;">${e.matricule}</td><td style="border:1px solid #000; padding:8px;">${e.nom} ${e.postnom || ''}</td><td style="border:1px solid #000; padding:8px; color:red; font-weight:bold;">DETTE ANNUELLE : ${detteGlobale.toFixed(2)} $</td></tr>`;
+                }
+            } else {
+                const paiementsDuMotif = tousLesPaiements.filter(p => p.matricule === e.matricule && p.motif.toLowerCase().includes(motifTarget.toLowerCase()));
+                const totalPayePourCeMotif = paiementsDuMotif.reduce((s, p) => s + p.montant, 0);
+                const tarifAttendu = e.tarif || 0;
+                const estEnOrdre = totalPayePourCeMotif >= tarifAttendu;
+                
+                if(typeFiltre === "Ordre" && estEnOrdre) {
+                    trs += `<tr><td style="border:1px solid #000; padding:8px;">${e.matricule}</td><td style="border:1px solid #000; padding:8px;">${e.nom} ${e.postnom || ''}</td><td style="border:1px solid #000; padding:8px; color:green; font-weight:bold;">EN ORDRE (${totalPayePourCeMotif}$)</td></tr>`;
+                } else if(typeFiltre === "Dette" && !estEnOrdre) {
+                    const resteA_Payer = tarifAttendu - totalPayePourCeMotif;
+                    trs += `<tr><td style="border:1px solid #000; padding:8px;">${e.matricule}</td><td style="border:1px solid #000; padding:8px;">${e.nom} ${e.postnom || ''}</td><td style="border:1px solid #000; padding:8px; color:red; font-weight:bold;">INSOLVABLE (Reste ${resteA_Payer.toFixed(2)}$)</td></tr>`;
+                }
             }
         });
+
+        let titreDoc = typeFiltre === 'GlobalInsolvable' ? "RAPPORT FINANCIER DES INSOLVABILITÉS GLOBALES (ANNUEL)" : `RAPPORT FINANCIER : ÉLÈVES ${typeFiltre === 'Ordre' ? 'EN ORDRE' : 'INSOLVABLES'}`;
 
         let html = `
             <div class="receipt-box" style="border:2px solid #000; padding:30px;">
                 <div class="receipt-header">
                     <h2>${schoolData.name}</h2>
-                    <h3>LISTE DES ÉLÈVES : ${typeFiltre === 'Ordre' ? 'EN ORDRE DE PAIEMENT' : 'INSOLVABLES (DETTE)'}</h3>
-                    <p><b>Classe :</b> ${classeTarget} | <b>Frais visé :</b> ${motifTarget}</p>
+                    <h3>${titreDoc}</h3>
+                    <p><b>Classe :</b> ${classeTarget} ${typeFiltre !== 'GlobalInsolvable' ? `| <b>Frais visé :</b> ${motifTarget}` : ''}</p>
                     <p>Date d'édition : ${new Date().toLocaleDateString('fr-FR')}</p>
                 </div>
                 <table style="width:100%; border-collapse:collapse; margin-top:20px;">
@@ -1320,26 +1525,21 @@
                         <tr>
                             <th style="border:1px solid #000; padding:8px; background:#eee;">MATRICULE</th>
                             <th style="border:1px solid #000; padding:8px; background:#eee;">NOM COMPLET</th>
-                            <th style="border:1px solid #000; padding:8px; background:#eee;">STATUT</th>
+                            <th style="border:1px solid #000; padding:8px; background:#eee;">STATUT FINANCIER</th>
                         </tr>
                     </thead>
                     <tbody>
-                        ${trs || '<tr><td colspan="3" style="text-align:center; padding:10px;">Aucun résultat correspondant.</td></tr>'}
+                        ${trs || '<tr><td colspan="3" style="text-align:center; padding:10px;">Aucun élève ne correspond à ces critères actuels.</td></tr>'}
                     </tbody>
                 </table>
                 <div style="margin-top:40px; text-align:right;">
-                    <p>Le Bureau de la Comptabilité</p>
+                    <p>La Direction Générale</p>
                 </div>
             </div>
         `;
-
         document.getElementById('rapportContent').innerHTML = html;
         document.getElementById('previewOverlay').style.display = 'flex';
     }
-    
-    function resetApp() { if(confirm("ATTENTION : Cela va supprimer TOUTES les données. Confirmer ?")) { localStorage.clear(); location.reload(); } }
-    function changerTaux() { tauxChange = Number(document.getElementById('tauxInput').value); localStorage.setItem('t2_taux', tauxChange); document.getElementById('displayTauxNav').innerText = "Taux: 1$ = "+tauxChange+" FC"; refreshUI(); alert("Taux mis à jour !"); }
 </script>
-
 </body>
 </html>
