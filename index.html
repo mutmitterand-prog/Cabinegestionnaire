@@ -4,8 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SYSTÈME DE GESTION SCOLAIRE</title>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="sql-wasm.js"></script>
     <style>
         :root { 
             --sidebar: #1a252f; --accent: #27ae60; --bg: #f4f7f6; 
@@ -26,7 +25,7 @@
             z-index: 10000; display: none; align-items: flex-start; justify-content: center; 
             overflow-y: auto; padding: 40px 20px; 
         }
-        .preview-content { background: white; width: 100%; max-width: 900px; padding: 0; border-radius: 8px; box-shadow: 0 15px 35px rgba(0,0,0,0.5); }
+        .preview-content { background: white; width: 100%; max-width: 600px; padding: 0; border-radius: 8px; box-shadow: 0 15px 35px rgba(0,0,0,0.5); }
         .preview-footer { padding: 20px; background: #f8f9fa; display: flex; gap: 10px; justify-content: center; border-bottom-left-radius: 8px; border-bottom-right-radius: 8px; }
 
         /* BARRE LATERALE */
@@ -45,70 +44,44 @@
         .stat-card h4 { font-size: 0.8rem; color: #7f8c8d; text-transform: uppercase; margin-bottom: 5px; }
         .stat-card p { font-size: 1.4rem; font-weight: bold; color: #2c3e50; }
 
-        .card, .card-container { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); margin-bottom: 20px; }
+        .card { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); margin-bottom: 20px; }
         .form-group { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 15px; align-items: center; }
         input, select { padding: 10px; border: 1px solid #ddd; border-radius: 5px; flex: 1; min-width: 150px; outline: none; }
 
-        /* TABLEAUX RAPPORTS & COMPTA */
+        /* TABLEAUX */
         table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
         th, td { padding: 12px 10px; text-align: left; border-bottom: 1px solid #eee; font-size: 0.85rem; }
         th { background: #f8f9fa; color: #555; text-transform: uppercase; font-size: 0.75rem; }
 
-        /* --- Styles Table Comptable Dédiée --- */
-        .table-compta { width: 100%; border-collapse: collapse; margin-top: 15px; background-color: #ffffff; }
-        .table-compta th { background-color: #1a252f; color: #ffffff; padding: 12px 10px; text-align: left; font-size: 14px; }
-        .table-compta td { border-bottom: 1px solid #f4f7f6; padding: 10px; font-size: 13px; }
-        .table-compta tbody tr:hover { background-color: #f4f7f6; }
-        
-        .badge-statut { padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: bold; }
-        .badge-paye { background-color: rgba(39, 174, 96, 0.15); color: #27ae60; }
-        .badge-partiel { background-color: rgba(243, 156, 18, 0.15); color: #f39c12; }
-        .badge-impaye { background-color: rgba(231, 76, 60, 0.15); color: #e74c3c; }
-
-        .section-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; flex-wrap: wrap; gap: 10px; }
-        .kpi-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-bottom: 20px; }
-        .kpi-card { background: #fff; padding: 15px; border-radius: 6px; box-shadow: 0 2px 4px rgba(0,0,0,0.02); }
-        .kpi-card h3 { font-size: 0.85rem; color: #7f8c8d; margin-bottom: 5px; text-transform: uppercase; }
-        .kpi-card p { font-size: 1.3rem; font-weight: bold; color: #2c3e50; }
-
-        .print-only-header { display: none; }
-
         /* BOUTONS */
-        button { padding: 8px 12px; border-radius: 5px; border: none; cursor: pointer; font-weight: bold; color: white; transition: 0.2s; display: inline-flex; align-items: center; gap: 5px; }
+        button { padding: 8px 12px; border-radius: 5px; border: none; cursor: pointer; font-weight: bold; color: white; transition: 0.2s; }
         .btn-main { background: var(--accent); }
         .btn-del { background: var(--danger); }
         .btn-print { background: var(--warning); }
         .btn-info { background: var(--info); }
         .btn-finance { background: var(--finance); }
 
-        /* STYLE REÇU */
+        /* STYLE REÇU / RAPPORT (FEUILLE BLANCHE) */
         .receipt-box { border: 2px solid #000; padding: 30px; width: 100%; color: #000; background: #fff; position: relative; }
         .receipt-header { text-align: center; border-bottom: 2px solid #000; margin-bottom: 20px; padding-bottom: 15px; }
         .receipt-row { display: flex; justify-content: space-between; margin: 10px 0; font-size: 1.1rem; }
         .validity-badge { border: 2px dashed #000; padding: 10px; margin-top: 20px; text-align: center; font-family: monospace; font-weight: bold; font-size: 1.1rem; background: #f9f9f9; }
 
         .finance-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px; }
-        .check-group { display: flex; gap: 15px; background: #f9f9f9; padding: 10px; border-radius: 5px; width: 100%; border: 1px solid #ddd; }
-        .check-item { display: flex; align-items: center; gap: 5px; font-size: 0.85rem; color: #333; }
-        .hist-sub-title { font-weight: bold; font-size: 0.8rem; background: #eee; padding: 5px; margin-top: 10px; text-transform: uppercase; color: #555; }
 
-        /* --- Impression --- */
         @media print {
             body * { visibility: hidden; }
             #printZone, #printZone * { visibility: visible; }
             #printZone { position: fixed; left: 0; top: 0; width: 100%; height: 100%; display: block !important; padding: 0; margin: 0; background: white; }
             #previewOverlay { background: white !important; display: block !important; }
             .no-print { display: none !important; }
-
-            /* Styles Livre Comptable Spécifiques à l'Impression */
-            #compta-personnel-section, #compta-personnel-section * { visibility: visible; }
-            #compta-personnel-section { position: absolute; left: 0; top: 0; width: 100%; }
-            .print-only-header { display: block !important; margin-bottom: 20px; }
-            .kpi-card { border: 1px solid #1a252f !important; float: left; width: 30%; margin-right: 3%; box-shadow: none !important; padding: 10px !important; }
-            .table-compta { width: 100% !important; page-break-inside: auto; }
-            .table-compta tr { page-break-inside: avoid; page-break-after: auto; }
-            @page { size: A4 landscape; margin: 15mm; }
         }
+        
+        .check-group { display: flex; gap: 15px; background: #f9f9f9; padding: 10px; border-radius: 5px; width: 100%; border: 1px solid #ddd; }
+        .check-item { display: flex; align-items: center; gap: 5px; font-size: 0.85rem; color: #333; }
+        
+        /* Styles pour les sections d'historique subdivisées */
+        .hist-sub-title { font-weight: bold; font-size: 0.8rem; background: #eee; padding: 5px; margin-top: 10px; text-transform: uppercase; color: #555; }
     </style>
 </head>
 <body>
@@ -118,7 +91,6 @@
             <div id="printZone">
                 <div id="recuContent"></div>
                 <div id="rapportContent"></div>
-                <div id="comptaPrintClone"></div>
             </div>
             <div class="preview-footer no-print">
                 <button class="btn-main" style="padding:15px 30px; font-size:1rem;" onclick="window.print()">🖨️ IMPRIMER / PDF</button>
@@ -330,7 +302,7 @@
                         <div class="form-group">
                             <input type="text" id="entreeLibelle" placeholder="Source">
                             <input type="number" id="entreeMontant" placeholder="Montant $">
-                            <button class="btn-main" onclick="ajouterMouvement('ENTREE')">Enregistrer l'Entrée</button>
+                            <button class="btn-main" onclick="ajouterMouvement('ENTREE')" style="width: 100%;">Enregistrer l'Entrée</button>
                         </div>
                     </div>
                     <div class="card" style="border-top: 4px solid #e74c3c;">
@@ -338,7 +310,7 @@
                         <div class="form-group">
                             <input type="text" id="depenseLibelle" placeholder="Motif">
                             <input type="number" id="depenseMontant" placeholder="Montant $">
-                            <button class="btn-del" onclick="ajouterMouvement('SORTIE')">Enregistrer la Sortie</button>
+                            <button class="btn-del" onclick="ajouterMouvement('SORTIE')" style="width: 100%;">Enregistrer la Sortie</button>
                         </div>
                     </div>
                 </div>
@@ -347,106 +319,21 @@
 
         <section id="personnel" class="section" style="display:none;">
             <div class="card">
-                <h3><i class="fas fa-user-plus"></i> Recrutement & Configuration Agent</h3>
+                <h3>Paie du Personnel & Avances</h3>
                 <div class="form-group" style="background:#f1f9f5; padding:15px; border-radius:8px; border:1px dashed var(--accent);">
                     <input type="text" id="staffNom" placeholder="Nom complet">
-                    <input type="text" id="staffFonction" placeholder="Fonction (Ex: Prof de Bio, Préfet...)">
+                    <input type="text" id="staffFonction" placeholder="Fonction (Ex: Prof de Bio, Préfet, Ménagère...)">
                     <input type="number" id="staffSalaire" placeholder="Salaire de base $">
-                    <button class="btn-main" onclick="ajouterStaff()"><i class="fas fa-plus"></i> Ajouter au Staff</button>
+                    <button class="btn-main" onclick="ajouterStaff()">Ajouter au Staff</button>
                 </div>
                 <table id="tableStaff">
                     <thead><tr><th>Nom</th><th>Fonction</th><th>Salaire ($)</th><th>Avances</th><th>Net à Payer</th><th>Action</th></tr></thead>
                     <tbody></tbody>
                 </table>
             </div>
-
-            <div id="compta-personnel-section" class="card-container">
-                <div class="section-header">
-                    <h2><i class="fas fa-book-open"></i> Livre Comptable Mensuel Global (Personnel)</h2>
-                    <div class="filter-actions no-print">
-                        <label for="compta-mois-select">Mois de gestion :</label>
-                        <select id="compta-mois-select" class="form-control" style="display:inline-block; width:auto; margin-right:15px;">
-                            <option value="Septembre">Septembre</option>
-                            <option value="Octobre">Octobre</option>
-                            <option value="Novembre">Novembre</option>
-                            <option value="Décembre">Décembre</option>
-                            <option value="Janvier">Janvier</option>
-                            <option value="Février">Février</option>
-                            <option value="Mars">Mars</option>
-                            <option value="Avril">Avril</option>
-                            <option value="Mai">Mai</option>
-                            <option value="Juin">Juin</option>
-                        </select>
-                        
-                        <button id="btn-imprimer-paie" class="btn btn-primary" style="background-color: #27ae60;" onclick="ouvrirImpressionLivreComptable()">
-                            <i class="fas fa-print"></i> Imprimer le Rapport
-                        </button>
-                    </div>
-                </div>
-
-                <div class="print-only-header">
-                    <h1>MUTMITTSHOP — GESTION COMPTABLE</h1>
-                    <h2>Livre Mensuel des Salaires - <span id="print-mois-label"></span></h2>
-                    <p>Date d'édition : <span id="print-date-facture"></span></p>
-                    <hr style="border: 1px solid #1a252f;">
-                </div>
-
-                <div class="kpi-grid">
-                    <div class="kpi-card" style="border-left: 5px solid #3498db;">
-                        <h3>Masse Salariale Théorique</h3>
-                        <p id="total-attendu-mensuel">0,00 $</p>
-                    </div>
-                    <div class="kpi-card" style="border-left: 5px solid #27ae60;">
-                        <h3>Total Versé</h3>
-                        <p id="total-verse-mensuel">0,00 $</p>
-                    </div>
-                    <div class="kpi-card" style="border-left: 5px solid #e74c3c;">
-                        <h3>Reste à Verser (Balance)</h3>
-                        <p id="total-reste-mensuel">0,00 $</p>
-                    </div>
-                </div>
-
-                <div class="table-responsive">
-                    <table class="table-compta" id="table-livre-mensuel">
-                        <thead>
-                            <tr>
-                                <th>Matricule / Nom</th>
-                                <th>Poste / Fonction</th>
-                                <th>Salaire Base</th>
-                                <th>Primes / Bonus</th>
-                                <th>Avances / Retenues</th>
-                                <th>Net Payé</th>
-                                <th>Statut</th>
-                                <th>Reste Dû</th>
-                            </tr>
-                        </thead>
-                        <tbody id="tbody-livre-mensuel">
-                            </tbody>
-                    </table>
-                </div>
-
-                <div style="margin-top: 40px;"></div>
-                <hr class="no-print" style="border-color: #f4f7f6;">
-
-                <div class="section-header" style="margin-top: 20px;">
-                    <h2><i class="fas fa-chart-line"></i> Bilan Annuel Macro Évolutif (Masse Salariale)</h2>
-                </div>
-                
-                <div class="table-responsive">
-                    <table class="table-compta" id="table-bilan-annuel">
-                        <thead>
-                            <tr id="thr-bilan-mois">
-                                <th>Indicateur / Mois</th>
-                            </tr>
-                        </thead>
-                        <tbody id="tbody-bilan-annuel">
-                            </tbody>
-                    </table>
-                </div>
-            </div>
             
             <div class="card" style="border-top: 4px solid var(--finance)">
-                <h3>🖨️ Générer un Bulletin / Fiche de Paie Mensuelle Individualisée</h3>
+                <h3>🖨️ Générer un Bulletin / Fiche de Paie Mensuelle</h3>
                 <div class="form-group">
                     <select id="ficheStaffSelect"><option value="">-- Choisir un agent --</option></select>
                     <select id="ficheMoisSelect">
@@ -469,7 +356,7 @@
             <div class="finance-grid">
                 <div class="card">
                     <h3>💵 Recettes Globales Ventilées</h3>
-                    <div id="financeRecettesMois" style="max-height: 250px; overflow-y: auto; margin-bottom:10px; font-size:0.9rem;"></div>
+                    <div id="financeRecettesMois" style="max-height: 250px; overflow-y: auto; margin-bottom:10px; font-size:0.9rem; space-y: 5px;"></div>
                     <div style="border-top:1px solid #eee; padding-top:10px; font-weight:bold;">
                         <p>Total Recettes Scolaires Éléves : <span id="finTotalMinerval">0</span> $</p>
                     </div>
@@ -488,7 +375,7 @@
             </div>
 
             <div class="card">
-                <h3>Mouvements de Caisse (Entrées/Sorties Diverses)</h3>
+                <h3>📜 Historique des Mouvements de Caisse (Entrées/Sorties Diverses)</h3>
                 <div style="max-height: 250px; overflow-y: auto;">
                     <table id="tableMouvements">
                         <thead>
@@ -605,36 +492,181 @@
     </main>
 
     <script>
-    // --- Configuration d'initialisation de Supabase ---
-    const SUPABASE_URL = "https://TON_PROJECT_ID.supabase.co"; 
-    const SUPABASE_KEY = "TON_ANON_PUBLIC_KEY";
-    let supabase = null;
+    // --- MOTEUR SQLITE LOCAL (NW.JS + FS) ---
+    let db;
+    const fs = require('fs');
+    const DB_FILE = "ecole.db";
 
-    try {
-        if(SUPABASE_URL !== "https://TON_PROJECT_ID.supabase.co") {
-            supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-        }
-    } catch(err) { console.error("Erreur d'initialisation Supabase:", err); }
-
-    const dicMois = {
-        "septembre":1, "octobre":2, "novembre":3, "décembre":4,
-        "janvier":5, "février":6, "mars":7, "avril":8, "mai":9, "juin":10
-    };
-
-    // --- 1. BASE DE DONNÉES & VARIABLES LOCALES ---
-    let matriculeCount = Number(localStorage.getItem('t2_mat_count')) || 1;
-    let currentPin = localStorage.getItem('t2_pin') || "1234";
-    let adminPass = localStorage.getItem('t2_admin') || "1234";
-    let tauxChange = Number(localStorage.getItem('t2_taux')) || 2250;
-    let schoolData = JSON.parse(localStorage.getItem('t2_sdata')) || { name: "MUTMITTSHOP", addr: "Lubumbashi, RDC", tel: "0" };
-    let classes = JSON.parse(localStorage.getItem('t2_classes')) || [{cat: 2, nom: "1ère Primaire", tarif: 50}];
-    let eleves = JSON.parse(localStorage.getItem('t2_eleves')) || [];
-    let staff = JSON.parse(localStorage.getItem('t2_staff')) || [];
-    let tousLesPaiements = JSON.parse(localStorage.getItem('t2_paiements_all')) || [];
-    let autresMouvements = JSON.parse(localStorage.getItem('t2_autres_mouv')) || [];
+    // Variables globales réassignables par la base de données
+    let matriculeCount = 1;
+    let currentPin = "1234";
+    let adminPass = "1234";
+    let tauxChange = 2250;
+    let schoolData = { name: "MUTMITTSHOP", addr: "Lubumbashi, RDC", tel: "0" };
+    let classes = [{cat: 2, nom: "1ère Primaire", tarif: 50}];
+    let eleves = [];
+    let staff = [];
+    let tousLesPaiements = [];
+    let autresMouvements = [];
+    
     let targetSection = ""; 
     let targetBtn = null;
     let actionSecuriseeEnAttente = null;
+
+    // --- INITIALISATION SYNCHRONE AVEC SQLITE ---
+    async function initialiserBaseDeDonnees() {
+        try {
+            const SQL = await initSqlJs({
+                locateFile: file => `https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.6.2/${file}`
+            });
+
+            if (fs.existsSync(DB_FILE)) {
+                const fileBuffer = fs.readFileSync(DB_FILE);
+                db = new SQL.Database(fileBuffer);
+                console.log("Base de données SQLite chargée.");
+                chargerToutesLesDonneesSQL();
+            } else {
+                db = new SQL.Database();
+                creerStructureTables();
+                migerAnciennesDonneesSiExistantes();
+                sauvegarderSQL();
+            }
+            // Mettre à jour l'affichage d'attente
+            document.getElementById('loginSchoolName').innerText = schoolData.name;
+        } catch (err) {
+            alert("Erreur lors de l'initialisation de la base SQLite, basculement en mode secours.");
+            console.error(err);
+        }
+    }
+
+    function creerStructureTables() {
+        db.run(`
+            CREATE TABLE IF NOT EXISTS configuration (cle TEXT PRIMARY KEY, valeur TEXT);
+            CREATE TABLE IF NOT EXISTS classes (id INTEGER PRIMARY KEY AUTOINCREMENT, cat INT, nom TEXT, tarif REAL);
+            CREATE TABLE IF NOT EXISTS eleves (matricule TEXT PRIMARY KEY, nom TEXT, postnom TEXT, prenom TEXT, sexe TEXT, classe TEXT, tarif REAL, nationalite TEXT, lieuNaiss TEXT, dateNaiss TEXT, nomPere TEXT, telPere TEXT, nomMere TEXT, telMere TEXT, actif INT);
+            CREATE TABLE IF NOT EXISTS paiements (id INTEGER PRIMARY KEY, ref TEXT, nomEleve TEXT, matricule TEXT, classe TEXT, motif TEXT, montantOriginal REAL, devise TEXT, montant REAL, date TEXT);
+            CREATE TABLE IF NOT EXISTS autres_mouvements (id INTEGER PRIMARY KEY AUTOINCREMENT, ref TEXT, type TEXT, libelle TEXT, montant REAL, date TEXT);
+            CREATE TABLE IF NOT EXISTS staff (id TEXT PRIMARY KEY, nom TEXT, fonction TEXT, salaire REAL);
+            CREATE TABLE IF NOT EXISTS staff_paiements (id INTEGER PRIMARY KEY AUTOINCREMENT, staff_id TEXT, ref TEXT, mois TEXT, type TEXT, montant REAL, date TEXT);
+        `);
+        
+        // Configuration initiale par défaut
+        db.run("INSERT INTO configuration VALUES ('matriculeCount', '1'), ('currentPin', '1234'), ('adminPass', '1234'), ('tauxChange', '2250'), ('schoolData', ?)", [JSON.stringify(schoolData)]);
+        db.run("INSERT INTO classes (cat, nom, tarif) VALUES (2, '1ère Primaire', 50)");
+    }
+
+    function chargerToutesLesDonneesSQL() {
+        // 1. Config
+        let res = db.exec("SELECT cle, valeur FROM configuration");
+        if(res.length) {
+            res[0].values.forEach(row => {
+                if(row[0] === 'matriculeCount') matriculeCount = Number(row[1]);
+                if(row[0] === 'currentPin') currentPin = row[1];
+                if(row[0] === 'adminPass') adminPass = row[1];
+                if(row[0] === 'tauxChange') tauxChange = Number(row[1]);
+                if(row[0] === 'schoolData') schoolData = JSON.parse(row[1]);
+            });
+        }
+        // 2. Classes
+        classes = [];
+        res = db.exec("SELECT cat, nom, tarif FROM classes");
+        if(res.length) {
+            res[0].values.forEach(r => classes.push({cat: r[0], nom: r[1], tarif: r[2]}));
+        }
+        // 3. Eleves
+        eleves = [];
+        res = db.exec("SELECT matricule, nom, postnom, prenom, sexe, classe, tarif, nationalite, lieuNaiss, dateNaiss, nomPere, telPere, nomMere, telMere, actif FROM eleves");
+        if(res.length) {
+            res[0].values.forEach(r => eleves.push({
+                matricule: r[0], nom: r[1], postnom: r[2], prenom: r[3], sexe: r[4], classe: r[5], tarif: r[6], nationalite: r[7], lieuNaiss: r[8], dateNaiss: r[9], nomPere: r[10], telPere: r[11], nomMere: r[12], telMere: r[13], actif: r[14] === 1
+            }));
+        }
+        // 4. Paiements
+        tousLesPaiements = [];
+        res = db.exec("SELECT id, ref, nomEleve, matricule, classe, motif, montantOriginal, devise, montant, date FROM paiements");
+        if(res.length) {
+            res[0].values.forEach(r => tousLesPaiements.push({
+                id: r[0], ref: r[1], nomEleve: r[2], matricule: r[3], classe: r[4], motif: r[5], montantOriginal: r[6], devise: r[7], montant: r[8], date: r[9]
+            }));
+        }
+        // 5. Autres Mouvements
+        autresMouvements = [];
+        res = db.exec("SELECT ref, type, libelle, montant, date FROM autres_mouvements");
+        if(res.length) {
+            res[0].values.forEach(r => autresMouvements.push({ref: r[0], type: r[1], libelle: r[2], montant: r[3], date: r[4]}));
+        }
+        // 6. Staff & Paiements Staff
+        staff = [];
+        res = db.exec("SELECT id, nom, fonction, salaire FROM staff");
+        if(res.length) {
+            res[0].values.forEach(r => {
+                let agent = { id: r[0], nom: r[1], fonction: r[2], salaire_contractuel: r[3], historiquePaiement: [] };
+                let pRes = db.exec("SELECT ref, mois, type, montant, date FROM staff_paiements WHERE staff_id = ?", [agent.id]);
+                if(pRes.length) {
+                    pRes[0].values.forEach(p => agent.historiquePaiement.push({ref: p[0], mois: p[1], type: p[2], montant: p[3], date: p[4]}));
+                }
+                staff.push(agent);
+            });
+        }
+    }
+
+    function migerAnciennesDonneesSiExistantes() {
+        // Fonction de sécurité si d'anciennes infos traînent dans le localStorage
+        if(localStorage.getItem('t2_eleves')) {
+            try {
+                matriculeCount = Number(localStorage.getItem('t2_mat_count')) || 1;
+                currentPin = localStorage.getItem('t2_pin') || "1234";
+                adminPass = localStorage.getItem('t2_admin') || "1234";
+                tauxChange = Number(localStorage.getItem('t2_taux')) || 2250;
+                schoolData = JSON.parse(localStorage.getItem('t2_sdata')) || schoolData;
+                classes = JSON.parse(localStorage.getItem('t2_classes')) || classes;
+                eleves = JSON.parse(localStorage.getItem('t2_eleves')) || [];
+                staff = JSON.parse(localStorage.getItem('t2_staff')) || [];
+                tousLesPaiements = JSON.parse(localStorage.getItem('t2_paiements_all')) || [];
+                autresMouvements = JSON.parse(localStorage.getItem('t2_autres_mouv')) || [];
+                
+                // Injection forcée dans SQLite
+                sauvegarder() ;
+            } catch(e) { console.log("Rien à migrer."); }
+        }
+    }
+
+    function sauvegarderSQL() {
+        if (!db) return;
+        const data = db.export();
+        const buffer = Buffer.from(data);
+        fs.writeFileSync(DB_FILE, buffer);
+    }
+
+    function sauvegarder() {
+        if (!db) return;
+        // Met à jour la base de données SQL complète à partir des arrays de l'application
+        db.run("DELETE FROM configuration");
+        db.run("INSERT INTO configuration VALUES ('matriculeCount', ?), ('currentPin', ?), ('adminPass', ?), ('tauxChange', ?), ('schoolData', ?)", [matriculeCount, currentPin, adminPass, tauxChange, JSON.stringify(schoolData)]);
+        
+        db.run("DELETE FROM classes");
+        classes.forEach(c => db.run("INSERT INTO classes (cat, nom, tarif) VALUES (?, ?, ?)", [c.cat, c.nom, c.tarif]));
+
+        db.run("DELETE FROM eleves");
+        eleves.forEach(e => db.run("INSERT INTO eleves VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)", [e.matricule, e.nom, e.postnom, e.prenom, e.sexe, e.classe, e.tarif, e.nationalite, e.lieuNaiss, e.dateNaiss, e.nomPere, e.telPere, e.nomMere, e.telMere, e.actif ? 1 : 0]));
+
+        db.run("DELETE FROM paiements");
+        tousLesPaiements.forEach(p => db.run("INSERT INTO paiements VALUES (?,?,?,?,?,?,?,?,?,?)", [p.id, p.ref, p.nomEleve, p.matricule, p.classe, p.motif, p.montantOriginal, p.devise, p.montant, p.date]));
+
+        db.run("DELETE FROM autres_mouvements");
+        autresMouvements.forEach(m => db.run("INSERT INTO autres_mouvements (ref, type, libelle, montant, date) VALUES (?,?,?,?,?)", [m.ref, m.type, m.libelle, m.montant, m.date]));
+
+        db.run("DELETE FROM staff");
+        db.run("DELETE FROM staff_paiements");
+        staff.forEach(st => {
+            db.run("INSERT INTO staff VALUES (?,?,?,?)", [st.id, st.nom, st.fonction, st.salaire_contractuel || st.salaire]);
+            if(st.historiquePaiement) {
+                st.historiquePaiement.forEach(p => db.run("INSERT INTO staff_paiements (staff_id, ref, mois, type, montant, date) VALUES (?,?,?,?,?,?)", [st.id, p.ref, p.mois, p.type, p.montant, p.date]));
+            }
+        });
+
+        sauvegarderSQL();
+    }
 
     // --- 2. AUTHENTIFICATION ---
     function checkLogin() {
@@ -644,60 +676,11 @@
         } else { alert("Code PIN incorrect."); }
     }
 
-    async function init() {
-        updateSchoolUI(); remplirSelects(); refreshUI();
+    function init() {
+        updateSchoolUI(); 
+        remplirSelects(); 
+        refreshUI();
         document.getElementById('tauxInput').value = tauxChange;
-        
-        // Configurer l'écouteur pour le Livre de Paie Mensuelle
-        document.getElementById('compta-mois-select').addEventListener('change', chargerLivreComptable);
-        
-        // Assigner le mois actuel par défaut
-        const listeMoisOptions = ["Septembre","Octobre","Novembre","Décembre","Janvier","Février","Mars","Avril","Mai","Juin"];
-        const moisIndex = new Date().getMonth(); 
-        const moisNomsFr = ["Janvier","Février","Mars","Avril","Mai","Juin","Juillet","Août","Septembre","Octobre","Novembre","Décembre"];
-        let moisTrouve = moisNomsFr[moisIndex];
-        if(listeMoisOptions.includes(moisTrouve)){
-            document.getElementById('compta-mois-select').value = moisTrouve;
-        } else {
-            document.getElementById('compta-mois-select').value = "Septembre";
-        }
-
-        if(supabase) { await chargerDepuisSupabase(); }
-        chargerLivreComptable();
-    }
-
-    async function chargerDepuisSupabase() {
-        try {
-            const { data: dbStaff, error: errStaff } = await supabase.from('staff').select('*').eq('statut', 'ACTIF');
-            if(!errStaff && dbStaff) {
-                staff = dbStaff.map(st => ({
-                    id: st.id,
-                    nom: st.nom,
-                    fonction: st.fonction,
-                    salaire_contractuel: st.salaire_contractuel,
-                    historiquePaiement: []
-                }));
-            }
-            const { data: dbPaiements, error: errPay } = await supabase.from('paiements_staff').select('*');
-            if(!errPay && dbPaiements) {
-                dbPaiements.forEach(p => {
-                    const agent = staff.find(st => st.id === p.staff_id);
-                    if(agent) {
-                        const chaineMois = Object.keys(dicMois).find(key => dicMois[key] === p.mois_comptable) || "Général";
-                        agent.historiquePaiement.push({
-                            ref: p.ref_paiement,
-                            mois: chaineMois.charAt(0).toUpperCase() + chaineMois.slice(1),
-                            type: p.type_mouvement,
-                            montant: Number(p.montant),
-                            date: p.date_versement
-                        });
-                    }
-                });
-            }
-            chargerStaff();
-            actualiserSelectStaffFiches();
-            chargerLivreComptable();
-        } catch(e) { console.error("Erreur lors de la synchronisation Supabase", e); }
     }
 
     // --- 3. NAVIGATION ---
@@ -711,7 +694,7 @@
 
         if(id === 'eleves') showSubSection('sub-nouveau');
         if(id === 'paiements') actualiserListeRecherchePaiement();
-        if(id === 'personnel') { chargerStaff(); actualiserSelectStaffFiches(); chargerLivreComptable(); }
+        if(id === 'personnel') { chargerStaff(); actualiserSelectStaffFiches(); }
         if(id === 'finance') { refreshUI(); chargerTableauMouvements(); chargerHistoriqueStaffGlobalUI(); }
         if(id === 'rapports-eleves') { genererRapportElevesOrdre(); }
         if(id === 'config') chargerConfig();
@@ -757,7 +740,6 @@
         };
         if(data.nom && data.classe) {
             eleves.push(data); matriculeCount++;
-            localStorage.setItem('t2_mat_count', matriculeCount);
             sauvegarder(); chargerListeRapide(); refreshUI();
             alert("Inscrit ! Matricule : " + mat);
             viderChampsInscr();
@@ -1019,7 +1001,7 @@
         const ref = document.getElementById('refCheckInput').value.trim();
         const res = document.getElementById('verifResult');
         const p = tousLesPaiements.find(x => x.ref === ref);
-        const m = ancients_m = autresMouvements.find(x => x.ref === ref);
+        const m = autresMouvements.find(x => x.ref === ref);
 
         if(p) {
             res.style.color = "green";
@@ -1035,7 +1017,6 @@
 
     function imprimerRecu(data, cible) {
         document.getElementById('rapportContent').style.display = 'none';
-        document.getElementById('comptaPrintClone').style.display = 'none';
         document.getElementById('recuContent').style.display = 'block';
 
         let affichageSomme = "";
@@ -1116,8 +1097,7 @@
         if(lib && mt) {
             const ref = genererReference(type === 'ENTREE' ? 'ENT' : 'SOR');
             autresMouvements.push({ref: ref, type, libelle: lib, montant: mt, date: new Date().toLocaleDateString('fr-FR')});
-            localStorage.setItem('t2_autres_mouv', JSON.stringify(autresMouvements));
-            refreshUI(); chargerTableauMouvements();
+            sauvegarder(); refreshUI(); chargerTableauMouvements();
             document.getElementById('entreeLibelle').value = ""; document.getElementById('entreeMontant').value = "";
             document.getElementById('depenseLibelle').value = ""; document.getElementById('depenseMontant').value = "";
             alert("Mouvement enregistré avec succès.");
@@ -1134,8 +1114,7 @@
 
     function supprimerMouvement(idx) { 
         autresMouvements.splice(idx,1); 
-        localStorage.setItem('t2_autres_mouv', JSON.stringify(autresMouvements)); 
-        refreshUI(); chargerTableauMouvements(); 
+        sauvegarder(); refreshUI(); chargerTableauMouvements(); 
         alert("Mouvement supprimé.");
     }
 
@@ -1151,6 +1130,7 @@
     function executerResetSecurise() {
         declencherProtectionAdmin(() => {
             if(confirm("ATTENTION CRITIQUE : Cela va détruire l'intégralité absolue des données configurées. Confirmer ?")) {
+                if (fs.existsSync(DB_FILE)) fs.unlinkSync(DB_FILE);
                 localStorage.clear();
                 location.reload();
             }
@@ -1191,6 +1171,13 @@
             const recMinerval = tousLesPaiements.filter(p => !p.motif.includes("Tranche") && !p.motif.includes("Accessoires") && ["Septembre","Octobre","Novembre","Décembre","Janvier","Février","Mars","Avril","Mai","Juin"].includes(p.motif)).reduce((s,p) => s + p.montant, 0);
             const recEtat = tousLesPaiements.filter(p => p.motif.includes("Tranche")).reduce((s,p) => s + p.montant, 0);
             const recAccessoires = tousLesPaiements.filter(p => p.motif.includes("Accessoires")).reduce((s,p) => s + p.montant, 0);
+            const recAutresPaiements = tousLesPaiements.reduce((s,p) => {
+                const m = p.motif;
+                if(!m.includes("Tranche") && !m.includes("Accessoires") && !["Septembre","Octobre","Novembre","Décembre","Janvier","Février","Mars","Avril","Mai","Juin"].includes(m)) {
+                    return s + p.montant;
+                }
+                return s;
+            }, 0);
 
             document.getElementById('financeRecettesMois').innerHTML = `
                 <div style="display:flex; justify-content:space-between; padding:4px 0;"><span>🏫 Minerval Général :</span><b>${recMinerval.toFixed(2)} $</b></div>
@@ -1203,7 +1190,6 @@
 
     function imprimerRapport() {
         document.getElementById('recuContent').style.display = 'none';
-        document.getElementById('comptaPrintClone').style.display = 'none';
         document.getElementById('rapportContent').style.display = 'block';
 
         const recMinerval = tousLesPaiements.filter(p => !p.motif.includes("Tranche") && !p.motif.includes("Accessoires") && ["Septembre","Octobre","Novembre","Décembre","Janvier","Février","Mars","Avril","Mai","Juin"].includes(p.motif)).reduce((s,p) => s + p.montant, 0);
@@ -1217,7 +1203,7 @@
             return s;
         }, 0);
 
-        const ent = autresMouvements.filter(m => m.type === 'ENTREE').reduce((s, m) => s + m.montant, 0);
+        const ent = ancientsmouvements = autresMouvements.filter(m => m.type === 'ENTREE').reduce((s, m) => s + m.montant, 0);
         const sorMouv = autresMouvements.filter(m => m.type === 'SORTIE').reduce((s, m) => s + m.montant, 0);
         
         let totalAvances = 0;
@@ -1265,13 +1251,6 @@
         document.getElementById('previewOverlay').style.display = 'flex';
     }
 
-    function sauvegarder() {
-        localStorage.setItem('t2_eleves', JSON.stringify(eleves));
-        localStorage.setItem('t2_paiements_all', JSON.stringify(tousLesPaiements));
-        localStorage.setItem('t2_classes', JSON.stringify(classes));
-        localStorage.setItem('t2_staff', JSON.stringify(staff));
-    }
-
     function remplirSelects() {
         const h = classes.map(c => `<option value="${c.nom}">${c.nom}</option>`).join('');
         document.getElementById('classeSelect').innerHTML = h;
@@ -1290,11 +1269,10 @@
 
     function ajouterClasse() {
         classes.push({cat: document.getElementById('newClassCat').value, nom: document.getElementById('newClassName').value, tarif: Number(document.getElementById('newClassTarif').value)});
-        localStorage.setItem('t2_classes', JSON.stringify(classes));
-        remplirSelects(); chargerConfig();
+        sauvegarder(); remplirSelects(); chargerConfig();
     }
 
-    function supprimerClasse(i) { classes.splice(i,1); localStorage.setItem('t2_classes', JSON.stringify(classes)); remplirSelects(); chargerConfig(); }
+    function supprimerClasse(i) { classes.splice(i,1); sauvegarder(); remplirSelects(); chargerConfig(); }
     function suppEleve(i) { eleves[i].actif = false; sauvegarder(); chargerElevesGestion(); refreshUI(); alert("Élève archivé."); }
     function updateSchoolUI() { 
         document.getElementById('navSchoolName').innerText = schoolData.name; 
@@ -1306,13 +1284,12 @@
         schoolData.name = document.getElementById('schoolNameInput').value;
         schoolData.addr = document.getElementById('schoolAddress').value;
         schoolData.tel = document.getElementById('schoolPhone').value;
-        localStorage.setItem('t2_sdata', JSON.stringify(schoolData));
-        updateSchoolUI(); alert("Coordonnées mises à jour !");
+        sauvegarder(); updateSchoolUI(); alert("Coordonnées mises à jour !");
     }
 
     function askSecurity(s, b) { targetSection = s; targetBtn = b; document.getElementById('overlayTitle').innerText = "🔑 DIRECTION"; document.getElementById('adminPassInput').value=""; document.getElementById('financeOverlay').style.display = 'flex'; }
     function closeFinance() { document.getElementById('financeOverlay').style.display = 'none'; }
-    function changerTaux() { tauxChange = Number(document.getElementById('tauxInput').value); localStorage.setItem('t2_taux', tauxChange); document.getElementById('displayTauxNav').innerText = "Taux: 1$ = " + tauxChange + " FC"; refreshUI(); alert("Taux mis à jour !"); }
+    function changerTaux() { tauxChange = Number(document.getElementById('tauxInput').value); sauvegarder(); document.getElementById('displayTauxNav').innerText = "Taux: 1$ = " + tauxChange + " FC"; refreshUI(); alert("Taux mis à jour !"); }
 
     function checkAdminAccess() { 
         if(document.getElementById('adminPassInput').value === adminPass) { 
@@ -1329,7 +1306,7 @@
         let confP = document.getElementById('confirmPin').value;
         if(oldP !== currentPin) return alert("Ancien PIN erroné.");
         if(newP !== confP || !newP) return alert("Confirmation invalide.");
-        currentPin = newP; localStorage.setItem('t2_pin', currentPin); alert("PIN modifié !");
+        currentPin = newP; sauvegarder(); alert("PIN modifié !");
     }
 
     function changerAdminSecurise() {
@@ -1338,11 +1315,11 @@
         let confA = document.getElementById('confirmAdmin').value;
         if(oldA !== adminPass) return alert("Ancien mot de passe erroné.");
         if(newA !== confA || !newA) return alert("Confirmation invalide.");
-        adminPass = newA; localStorage.setItem('t2_admin', adminPass); alert("Mot de passe admin modifié !");
+        adminPass = newA; sauvegarder(); alert("Mot de passe admin modifié !");
     }
 
-    // --- 9. PERSONNEL, SUPABASE & LIVRE DE PAIE COMPTABLE ---
-    async function ajouterStaff() {
+    // --- 9. PERSONNEL ---
+    function ajouterStaff() {
         const nom = document.getElementById('staffNom').value;
         const fonction = document.getElementById('staffFonction').value || "Non précisée";
         const sal = Number(document.getElementById('staffSalaire').value);
@@ -1350,14 +1327,10 @@
             let localId = crypto.randomUUID();
             let nouvelAgent = { id: localId, nom, fonction, salaire_contractuel: sal, historiquePaiement: [] };
             
-            if(supabase) {
-                const { data, error } = await supabase.from('staff').insert([{
-                    id: localId, nom, fonction, salaire_contractuel: sal, statut: 'ACTIF'
-                }]).select();
-                if(error) { alert("Erreur d'insertion Supabase, enregistrement local uniquement."); }
-            }
-            
-            staff.push(nouvelAgent); sauvegarder(); chargerStaff(); actualiserSelectStaffFiches(); chargerLivreComptable();
+            staff.push(nouvelAgent); 
+            sauvegarder(); 
+            chargerStaff(); 
+            actualiserSelectStaffFiches();
             document.getElementById('staffNom').value = ""; document.getElementById('staffFonction').value = ""; document.getElementById('staffSalaire').value = "";
         }
     }
@@ -1383,168 +1356,28 @@
         }).join('');
     }
 
-    async function genererPaie(idx, type) {
-        const mois = prompt("Pour quel mois ou motif ? (Ex: Septembre, Octobre, Novembre, Décembre, Janvier...)");
+    function genererPaie(idx, type) {
+        const mois = prompt("Pour quel mois ou motif ? (Ex: Septembre, Octobre, Mai...)");
         if(!mois) return;
-        const mtString = prompt(`Montant de la ${type} pour ${staff[idx].nom} ($) :`);
-        if(mtString === null) return;
-        const montant = Number(mtString);
+        const montant = Number(prompt(`Montant de la ${type} pour ${staff[idx].nom} ($) :`));
         
         if(montant > 0) {
             if(!staff[idx].historiquePaiement) staff[idx].historiquePaiement = [];
             const ref = genererReference('STAFF');
             const dateDuJour = new Date().toISOString().split('T')[0];
 
-            if(supabase) {
-                let codeMoisNum = dicMois[mois.toLowerCase().trim()] || 1;
-                let anneeEnCours = new Date().getFullYear();
-                
-                const { error } = await supabase.from('paiements_staff').insert([{
-                    staff_id: staff[idx].id,
-                    ref_paiement: ref,
-                    date_versement: dateDuJour,
-                    mois_comptable: codeMoisNum,
-                    annee_comptable: anneeEnCours,
-                    type_mouvement: type.toUpperCase(),
-                    montant: montant,
-                    mode_paiement: 'CASH',
-                    commentaire: `Généré depuis l'application scolaire pour le motif : ${mois}`
-                }]);
-                if(error) { console.error("Erreur d'insertion transactionnelle Supabase:", error); }
-            }
-
-            // Uniformiser la casse du mois inséré (Ex: "septembre" -> "Septembre")
-            const moisFormate = mois.trim().charAt(0).toUpperCase() + mois.trim().slice(1).toLowerCase();
-
             staff[idx].historiquePaiement.push({
-                ref: ref, mois: moisFormate, type: type.toUpperCase(), montant: montant, date: dateDuJour
+                ref: ref, mois: mois, type: type.toUpperCase(), montant: montant, date: dateDuJour
             });
             
-            sauvegarder(); chargerStaff(); refreshUI(); chargerLivreComptable();
+            sauvegarder(); chargerStaff(); refreshUI();
             
             if(confirm("Action enregistrée. Voir l'aperçu de la pièce de caisse ?")) {
                 imprimerRecu({
-                    ref: ref, nom: staff[idx].nom, typeMouvement: `${type.toUpperCase()} (${moisFormate})`, montant: montant, date: dateDuJour
+                    ref: ref, nom: staff[idx].nom, typeMouvement: `${type.toUpperCase()} (${mois})`, montant: montant, date: dateDuJour
                 }, "STAFF");
             }
         }
-    }
-
-    /**
-     * GENERATEUR DYNAMIQUE : Livre Comptable Mensuel Global & Balance
-     */
-    function chargerLivreComptable() {
-        const moisSelectionne = document.getElementById('compta-mois-select').value;
-        
-        // Mise à jour des labels d'impression invisibles à l'écran
-        document.getElementById('print-mois-label').textContent = `${moisSelectionne} ${new Date().getFullYear()}`;
-        document.getElementById('print-date-facture').textContent = new Date().toLocaleDateString('fr-FR');
-
-        const tbody = document.getElementById('tbody-livre-mensuel');
-        tbody.innerHTML = '';
-
-        let masseTheoriqueGlobale = 0;
-        let totalVerseGlobal = 0;
-        let totalResteGlobal = 0;
-
-        staff.forEach(employe => {
-            // Filtrer l'historique pour l'employé en question pour le mois sélectionné
-            const paiementsMois = employe.historiquePaiement ? employe.historiquePaiement.filter(p => p.mois.toLowerCase().trim() === moisSelectionne.toLowerCase().trim()) : [];
-            
-            const salaireBase = parseFloat(employe.salaire_contractuel || employe.salaire) || 0;
-            const primes = paiementsMois.filter(p => p.type === 'PRIME').reduce((s, p) => s + p.montant, 0);
-            const retenues = paiementsMois.filter(p => p.type === 'AVANCE').reduce((s, p) => s + p.montant, 0);
-            const netPaye = retenues; // Dans ton architecture logicielle de base, l'avance constitue la somme décaissée.
-
-            const netDuCalcule = salaireBase + primes;
-            const resteDu = netDuCalcule - netPaye;
-
-            masseTheoriqueGlobale += netDuCalcule;
-            totalVerseGlobal += netPaye;
-            totalResteGlobal += resteDu;
-
-            let statutBadge = `<span class="badge-statut badge-impaye">Non payé</span>`;
-            if (netPaye >= netDuCalcule && netDuCalcule > 0) {
-                statutBadge = `<span class="badge-statut badge-paye">Soldé</span>`;
-            } else if (netPaye > 0 && resteDu > 0) {
-                statutBadge = `<span class="badge-statut badge-partiel">Acompte</span>`;
-            }
-
-            const row = document.createElement('tr');
-            row.innerHTML = `
-                <td><strong>${employe.nom}</strong></td>
-                <td>${employe.fonction || 'Non spécifié'}</td>
-                <td>${salaireBase.toFixed(2)} $</td>
-                <td>${primes > 0 ? `+${primes.toFixed(2)} $` : '0,00 $'}</td>
-                <td>${retenues > 0 ? `-${retenues.toFixed(2)} $` : '0,00 $'}</td>
-                <td style="font-weight: bold; color: #27ae60;">${netPaye.toFixed(2)} $</td>
-                <td>${statutBadge}</td>
-                <td style="font-weight: bold; color: ${resteDu > 0 ? '#e74c3c' : '#27ae60'}">${resteDu.toFixed(2)} $</td>
-            `;
-            tbody.appendChild(row);
-        });
-
-        document.getElementById('total-attendu-mensuel').textContent = `${masseTheoriqueGlobale.toFixed(2)} $`;
-        document.getElementById('total-verse-mensuel').textContent = `${totalVerseGlobal.toFixed(2)} $`;
-        document.getElementById('total-reste-mensuel').textContent = `${totalResteGlobal.toFixed(2)} $`;
-
-        genererBilanAnnuelMacro();
-    }
-
-    /**
-     * GENERATEUR DYNAMIQUE : Bilan Annuel Macro Évolutif (10 Mois scolaires)
-     */
-    function genererBilanAnnuelMacro() {
-        const moisLabels = ['Sept', 'Oct', 'Nov', 'Déc', 'Janv', 'Févr', 'Mars', 'Avril', 'Mai', 'Juin'];
-        const moisComplets = ['Septembre', 'Octobre', 'Novembre', 'Décembre', 'Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin'];
-        
-        const thr = document.getElementById('thr-bilan-mois');
-        thr.innerHTML = '<th>Indicateur / Mois</th>';
-        moisLabels.forEach(m => thr.innerHTML += `<th>${m}</th>`);
-
-        let ligneDecaisse = '<td><strong>Masse Décaissée ($)</strong></td>';
-        let ligneReste = '<td><strong>Reste à Verser ($)</strong></td>';
-
-        moisComplets.forEach(mFull => {
-            let decaisseMois = 0;
-            let resteMois = 0;
-
-            staff.forEach(employe => {
-                const paiementsMois = employe.historiquePaiement ? employe.historiquePaiement.filter(p => p.mois.toLowerCase().trim() === mFull.toLowerCase().trim()) : [];
-                const salaireBase = parseFloat(employe.salaire_contractuel || employe.salaire) || 0;
-                const primes = paiementsMois.filter(p => p.type === 'PRIME').reduce((s, p) => s + p.montant, 0);
-                const retenues = paiementsMois.filter(p => p.type === 'AVANCE').reduce((s, p) => s + p.montant, 0);
-                
-                decaisseMois += retenues;
-                resteMois += ((salaireBase + primes) - retenues);
-            });
-
-            ligneDecaisse += `<td style="color: #27ae60; font-weight: 500;">${decaisseMois.toFixed(0)} $</td>`;
-            ligneReste += `<td style="color: ${resteMois > 0 ? '#e74c3c' : '#a0a0a0'};">${resteMois.toFixed(0)} $</td>`;
-        });
-
-        const tbodyBilan = document.getElementById('tbody-bilan-annuel');
-        tbodyBilan.innerHTML = `<tr>${ligneDecaisse}</tr><tr>${ligneReste}</tr>`;
-    }
-
-    /**
-     * Lance la modale de prévisualisation spécifique pour l'impression du Livre de Comptabilité
-     */
-    function ouvrirImpressionLivreComptable() {
-        document.getElementById('recuContent').style.display = 'none';
-        document.getElementById('rapportContent').style.display = 'none';
-        
-        const containerClone = document.getElementById('compta-personnel-section').cloneNode(true);
-        // Retirer les sélecteurs de filtre inutiles à l'impression
-        const actionsNode = containerClone.querySelector('.filter-actions');
-        if(actionsNode) actionsNode.remove();
-
-        const printZone = document.getElementById('comptaPrintClone');
-        printZone.innerHTML = '';
-        printZone.appendChild(containerClone);
-        printZone.style.display = 'block';
-
-        document.getElementById('previewOverlay').style.display = 'flex';
     }
 
     function chargerHistoriqueStaffGlobalUI() {
@@ -1610,7 +1443,6 @@
         const resteDu = baseSal - totalAvances;
 
         document.getElementById('recuContent').style.display = 'none';
-        document.getElementById('comptaPrintClone').style.display = 'none';
         document.getElementById('rapportContent').style.display = 'block';
 
         let html = `
@@ -1671,12 +1503,13 @@
         document.getElementById('previewOverlay').style.display = 'flex';
     }
 
-    async function supprimerStaff(i) {
-        if(supabase) {
-            const { error } = await supabase.from('staff').update({ statut: 'INACTIF' }).eq('id', staff[i].id);
-            if(error) { console.error("Erreur de suppression Supabase:", error); }
-        }
-        staff.splice(i,1); sauvegarder(); chargerStaff(); actualiserSelectStaffFiches(); refreshUI(); chargerLivreComptable(); alert("Membre du personnel supprimé.");
+    function supprimerStaff(i) {
+        staff.splice(i,1); 
+        sauvegarder(); 
+        chargerStaff(); 
+        actualiserSelectStaffFiches(); 
+        refreshUI(); 
+        alert("Membre du personnel supprimé.");
     }
     
     // --- 11. GESTION DES RAPPORTS COMPLETS ---
@@ -1722,7 +1555,6 @@
 
     function imprimerRapportEleves() {
         document.getElementById('recuContent').style.display = 'none';
-        document.getElementById('comptaPrintClone').style.display = 'none';
         document.getElementById('rapportContent').style.display = 'block';
 
         const classeTarget = document.getElementById('repClasseSelect').value;
@@ -1786,6 +1618,9 @@
         document.getElementById('rapportContent').innerHTML = html;
         document.getElementById('previewOverlay').style.display = 'flex';
     }
+
+    // Lance l'initialisation de la base SQLite au démarrage
+    window.addEventListener('DOMContentLoaded', initialiserBaseDeDonnees);
 </script>
 </body>
 </html>
