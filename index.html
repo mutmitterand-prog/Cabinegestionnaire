@@ -31,7 +31,8 @@
         /* BARRE LATERALE */
         nav { width: 260px; background: var(--sidebar); color: white; padding: 20px 0; display: flex; flex-direction: column; flex-shrink: 0; }
         .nav-logo { text-align: center; margin-bottom: 20px; padding: 10px; border-bottom: 1px solid rgba(255,255,255,0.1); }
-        .nav-logo div { width: 50px; height: 50px; background: var(--accent); border-radius: 50%; margin: 0 auto 10px; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 1.2rem; }
+        .logo-container { width: 60px; height: 60px; border-radius: 50%; margin: 0 auto 10px; display: flex; align-items: center; justify-content: center; overflow: hidden; background: var(--accent); font-weight: bold; font-size: 1.5rem; }
+        .logo-container img { width: 100%; height: 100%; object-fit: cover; }
         nav h2 { text-align: center; color: var(--accent); margin-bottom: 20px; font-size: 1.1rem; text-transform: uppercase; padding: 0 10px; }
         .nav-item { padding: 15px 25px; cursor: pointer; border-left: 4px solid transparent; transition: 0.3s; font-size: 0.9rem; display: flex; align-items: center; gap: 10px; }
         .nav-item:hover, .nav-item.active { background: #2c3e50; border-left-color: var(--accent); }
@@ -61,9 +62,11 @@
         .btn-info { background: var(--info); }
         .btn-finance { background: var(--finance); }
 
-        /* STYLE REÇU / RAPPORT (FEUILLE BLANCHE) */
+        /* STYLE REÇU / RAPPORT */
         .receipt-box { border: 2px solid #000; padding: 30px; width: 100%; color: #000; background: #fff; position: relative; }
         .receipt-header { text-align: center; border-bottom: 2px solid #000; margin-bottom: 20px; padding-bottom: 15px; }
+        .receipt-logo { width: 80px; height: 80px; margin: 0 auto 10px; display: none; }
+        .receipt-logo img { width: 100%; height: 100%; object-fit: contain; }
         .receipt-row { display: flex; justify-content: space-between; margin: 10px 0; font-size: 1.1rem; }
         .validity-badge { border: 2px dashed #000; padding: 10px; margin-top: 20px; text-align: center; font-family: monospace; font-weight: bold; font-size: 1.1rem; background: #f9f9f9; }
 
@@ -79,8 +82,6 @@
         
         .check-group { display: flex; gap: 15px; background: #f9f9f9; padding: 10px; border-radius: 5px; width: 100%; border: 1px solid #ddd; }
         .check-item { display: flex; align-items: center; gap: 5px; font-size: 0.85rem; color: #333; }
-        
-        /* Styles pour les sections d'historique subdivisées */
         .hist-sub-title { font-weight: bold; font-size: 0.8rem; background: #eee; padding: 5px; margin-top: 10px; text-transform: uppercase; color: #555; }
     </style>
 </head>
@@ -121,7 +122,7 @@
 
     <nav>
         <div class="nav-logo">
-            <div id="logoInitial">E</div>
+            <div id="logoContainer" class="logo-container">E</div>
             <h2 id="navSchoolName">ÉCOLE</h2>
         </div>
         <div class="nav-item active" onclick="showSection('eleves', this); showSubSection('sub-nouveau')">👤 Inscriptions</div>
@@ -318,6 +319,43 @@
         </section>
 
         <section id="personnel" class="section" style="display:none;">
+            <div style="display: flex; gap: 10px; margin-bottom: 20px;">
+                <button class="btn-finance" onclick="showSubStaff('sub-staff-livre')">📚 Grand Livre de la Paie</button>
+            </div>
+
+            <div id="sub-staff-livre" class="sub-section-staff" style="display:none;">
+                <div class="card">
+                    <h3>📚 Grand Livre Global de la Paie</h3>
+                    <select id="livreMoisSelect" onchange="chargerGrandLivrePaieUI()">
+                        <option value="Septembre">Septembre</option>
+                        <option value="Octobre">Octobre</option>
+                        <option value="Novembre">Novembre</option>
+                        <option value="Décembre">Décembre</option>
+                        <option value="Janvier">Janvier</option>
+                        <option value="Février">Février</option>
+                        <option value="Mars">Mars</option>
+                        <option value="Avril">Avril</option>
+                        <option value="Mai">Mai</option>
+                        <option value="Juin">Juin</option>
+                    </select>
+                    <button class="btn-print" onclick="imprimerGrandLivreMensuel()">🖨️ Imprimer</button>
+                    <table id="tableGrandLivrePaie">
+                        <thead>
+                            <tr>
+                                <th>Agent</th>
+                                <th>Fonction</th>
+                                <th>Salaire</th>
+                                <th>Primes</th>
+                                <th>Avances</th>
+                                <th>Total Reçu</th>
+                                <th>Reste Dû</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+
             <div class="card">
                 <h3>Paie du Personnel & Avances</h3>
                 <div class="form-group" style="background:#f1f9f5; padding:15px; border-radius:8px; border:1px dashed var(--accent);">
@@ -445,14 +483,31 @@
 
         <section id="config" class="section" style="display:none;">
             <div class="card" style="background: #e1f5fe;">
-                <h3>🏫 Coordonnées de l'École</h3>
-                <div class="form-group">
+                <h3>🏫 Coordonnées & Logo de l'École</h3>
+                <div class="form-group" style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
                     <input type="text" id="schoolNameInput" placeholder="Nom de l'école">
                     <input type="text" id="schoolAddress" placeholder="Adresse complète">
                     <input type="text" id="schoolPhone" placeholder="Téléphones">
-                    <button class="btn-info" onclick="sauverCoords()">Enregistrer les infos</button>
+                    <div>
+                        <label style="font-size: 0.75rem; font-weight: bold; display: block; margin-bottom: 4px;">Logo de l'école :</label>
+                        <input type="file" id="logoInput" accept="image/*" onchange="chargerLogoBase64(this)">
+                    </div>
+                    <button class="btn-info" onclick="sauverCoords()" style="grid-column: span 2; padding: 10px;">Enregistrer les infos & le logo</button>
                 </div>
             </div>
+            
+            <div class="card" style="background: #efebe9;">
+                <h3>💾 Sauvegardes & Échanges Externes (JSON)</h3>
+                <p style="font-size: 0.8rem; margin-bottom: 10px; color: #5d4037;">Exporter vos données pour sauvegarde ou importer une ancienne base au format JSON.</p>
+                <div style="display: flex; gap: 10px;">
+                    <button class="btn-main" onclick="exporterDonneesJSON()" style="flex:1; padding:12px;">📤 EXPORTER TOUT EN JSON</button>
+                    <div style="flex:1; display:flex; flex-direction:column; gap:5px;">
+                        <input type="file" id="importJsonInput" accept=".json" style="font-size:0.8rem; min-width:auto;">
+                        <button class="btn-finance" onclick="importerDonneesJSON()" style="width:100%;">📥 IMPORTER LE FICHIER JSON</button>
+                    </div>
+                </div>
+            </div>
+
             <div class="card">
                 <h3>⚙️ Taux & Sécurité</h3>
                 <div class="form-group">
@@ -497,12 +552,11 @@
     const fs = require('fs');
     const DB_FILE = "ecole.db";
 
-    // Variables globales réassignables par la base de données
     let matriculeCount = 1;
     let currentPin = "1234";
     let adminPass = "1234";
     let tauxChange = 2250;
-    let schoolData = { name: "MUTMITTSHOP", addr: "Lubumbashi, RDC", tel: "0" };
+    let schoolData = { name: "MUTMITTSHOP", addr: "Lubumbashi, RDC", tel: "0", logo: "" };
     let classes = [{cat: 2, nom: "1ère Primaire", tarif: 50}];
     let eleves = [];
     let staff = [];
@@ -512,8 +566,8 @@
     let targetSection = ""; 
     let targetBtn = null;
     let actionSecuriseeEnAttente = null;
+    let base64LogoTemporaire = "";
 
-    // --- INITIALISATION SYNCHRONE AVEC SQLITE ---
     async function initialiserBaseDeDonnees() {
         try {
             const SQL = await initSqlJs({
@@ -523,7 +577,6 @@
             if (fs.existsSync(DB_FILE)) {
                 const fileBuffer = fs.readFileSync(DB_FILE);
                 db = new SQL.Database(fileBuffer);
-                console.log("Base de données SQLite chargée.");
                 chargerToutesLesDonneesSQL();
             } else {
                 db = new SQL.Database();
@@ -531,7 +584,6 @@
                 migerAnciennesDonneesSiExistantes();
                 sauvegarderSQL();
             }
-            // Mettre à jour l'affichage d'attente
             document.getElementById('loginSchoolName').innerText = schoolData.name;
         } catch (err) {
             alert("Erreur lors de l'initialisation de la base SQLite, basculement en mode secours.");
@@ -549,14 +601,11 @@
             CREATE TABLE IF NOT EXISTS staff (id TEXT PRIMARY KEY, nom TEXT, fonction TEXT, salaire REAL);
             CREATE TABLE IF NOT EXISTS staff_paiements (id INTEGER PRIMARY KEY AUTOINCREMENT, staff_id TEXT, ref TEXT, mois TEXT, type TEXT, montant REAL, date TEXT);
         `);
-        
-        // Configuration initiale par défaut
         db.run("INSERT INTO configuration VALUES ('matriculeCount', '1'), ('currentPin', '1234'), ('adminPass', '1234'), ('tauxChange', '2250'), ('schoolData', ?)", [JSON.stringify(schoolData)]);
         db.run("INSERT INTO classes (cat, nom, tarif) VALUES (2, '1ère Primaire', 50)");
     }
 
     function chargerToutesLesDonneesSQL() {
-        // 1. Config
         let res = db.exec("SELECT cle, valeur FROM configuration");
         if(res.length) {
             res[0].values.forEach(row => {
@@ -564,16 +613,17 @@
                 if(row[0] === 'currentPin') currentPin = row[1];
                 if(row[0] === 'adminPass') adminPass = row[1];
                 if(row[0] === 'tauxChange') tauxChange = Number(row[1]);
-                if(row[0] === 'schoolData') schoolData = JSON.parse(row[1]);
+                if(row[0] === 'schoolData') {
+                    schoolData = JSON.parse(row[1]);
+                    if(!schoolData.logo) schoolData.logo = "";
+                }
             });
         }
-        // 2. Classes
         classes = [];
         res = db.exec("SELECT cat, nom, tarif FROM classes");
         if(res.length) {
             res[0].values.forEach(r => classes.push({cat: r[0], nom: r[1], tarif: r[2]}));
         }
-        // 3. Eleves
         eleves = [];
         res = db.exec("SELECT matricule, nom, postnom, prenom, sexe, classe, tarif, nationalite, lieuNaiss, dateNaiss, nomPere, telPere, nomMere, telMere, actif FROM eleves");
         if(res.length) {
@@ -581,7 +631,6 @@
                 matricule: r[0], nom: r[1], postnom: r[2], prenom: r[3], sexe: r[4], classe: r[5], tarif: r[6], nationalite: r[7], lieuNaiss: r[8], dateNaiss: r[9], nomPere: r[10], telPere: r[11], nomMere: r[12], telMere: r[13], actif: r[14] === 1
             }));
         }
-        // 4. Paiements
         tousLesPaiements = [];
         res = db.exec("SELECT id, ref, nomEleve, matricule, classe, motif, montantOriginal, devise, montant, date FROM paiements");
         if(res.length) {
@@ -589,13 +638,11 @@
                 id: r[0], ref: r[1], nomEleve: r[2], matricule: r[3], classe: r[4], motif: r[5], montantOriginal: r[6], devise: r[7], montant: r[8], date: r[9]
             }));
         }
-        // 5. Autres Mouvements
         autresMouvements = [];
         res = db.exec("SELECT ref, type, libelle, montant, date FROM autres_mouvements");
         if(res.length) {
             res[0].values.forEach(r => autresMouvements.push({ref: r[0], type: r[1], libelle: r[2], montant: r[3], date: r[4]}));
         }
-        // 6. Staff & Paiements Staff
         staff = [];
         res = db.exec("SELECT id, nom, fonction, salaire FROM staff");
         if(res.length) {
@@ -611,7 +658,6 @@
     }
 
     function migerAnciennesDonneesSiExistantes() {
-        // Fonction de sécurité si d'anciennes infos traînent dans le localStorage
         if(localStorage.getItem('t2_eleves')) {
             try {
                 matriculeCount = Number(localStorage.getItem('t2_mat_count')) || 1;
@@ -624,9 +670,7 @@
                 staff = JSON.parse(localStorage.getItem('t2_staff')) || [];
                 tousLesPaiements = JSON.parse(localStorage.getItem('t2_paiements_all')) || [];
                 autresMouvements = JSON.parse(localStorage.getItem('t2_autres_mouv')) || [];
-                
-                // Injection forcée dans SQLite
-                sauvegarder() ;
+                sauvegarder();
             } catch(e) { console.log("Rien à migrer."); }
         }
     }
@@ -640,7 +684,6 @@
 
     function sauvegarder() {
         if (!db) return;
-        // Met à jour la base de données SQL complète à partir des arrays de l'application
         db.run("DELETE FROM configuration");
         db.run("INSERT INTO configuration VALUES ('matriculeCount', ?), ('currentPin', ?), ('adminPass', ?), ('tauxChange', ?), ('schoolData', ?)", [matriculeCount, currentPin, adminPass, tauxChange, JSON.stringify(schoolData)]);
         
@@ -668,7 +711,85 @@
         sauvegarderSQL();
     }
 
-    // --- 2. AUTHENTIFICATION ---
+    // --- LOGO EN BASE64 ---
+    function chargerLogoBase64(input) {
+        if (input.files && input.files[0]) {
+            const lecteur = new FileReader();
+            lecteur.onload = function(e) {
+                base64LogoTemporaire = e.target.result;
+            };
+            lecteur.readAsDataURL(input.files[0]);
+        }
+    }
+
+    // --- IMPORT / EXPORT JSON ---
+    function exporterDonneesJSON() {
+        const donneesGlobales = {
+            version: "2026_v1",
+            matriculeCount,
+            currentPin,
+            adminPass,
+            tauxChange,
+            schoolData,
+            classes,
+            eleves,
+            staff,
+            tousLesPaiements,
+            autresMouvements
+        };
+        const chaineJson = JSON.stringify(donneesGlobales, null, 4);
+        const blob = new Blob([chaineJson], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
+        
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `SAUVEGARDE_${schoolData.name.replace(/\s+/g, '_')}_2026.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    }
+
+    function importerDonneesJSON() {
+        const input = document.getElementById('importJsonInput');
+        if (!input.files || !input.files[0]) return alert("Veuillez d'abord sélectionner un fichier .json");
+
+        if (confirm("⚠️ ATTENTION : L'importation va écraser TOUTES vos données actuelles. Voulez-vous continuer ?")) {
+            const lecteur = new FileReader();
+            lecteur.onload = function(e) {
+                try {
+                    const d = JSON.parse(e.target.result);
+                    
+                    if (!d.schoolData || !d.classes || !d.eleves) {
+                        throw new Error("Format de fichier invalide.");
+                    }
+
+                    matriculeCount = d.matriculeCount || 1;
+                    currentPin = d.currentPin || "1234";
+                    adminPass = d.adminPass || "1234";
+                    tauxChange = d.tauxChange || 2250;
+                    schoolData = d.schoolData;
+                    classes = d.classes;
+                    eleves = d.eleves;
+                    staff = d.staff || [];
+                    tousLesPaiements = d.tousLesPaiements || [];
+                    autresMouvements = d.autresMouvements || [];
+
+                    sauvegarder();
+                    updateSchoolUI();
+                    remplirSelects();
+                    refreshUI();
+                    alert("✅ Importation JSON réussie avec succès !");
+                    location.reload(); 
+                } catch (err) {
+                    alert("❌ Erreur de lecture du fichier : " + err.message);
+                }
+            };
+            lecteur.readAsText(input.files[0]);
+        }
+    }
+
+    // --- AUTHENTIFICATION ---
     function checkLogin() {
         if(document.getElementById('pinInput').value === currentPin) {
             document.getElementById('loginOverlay').style.display='none';
@@ -683,7 +804,7 @@
         document.getElementById('tauxInput').value = tauxChange;
     }
 
-    // --- 3. NAVIGATION ---
+    // --- NAVIGATION ---
     function showSection(id, btn) { 
         document.querySelectorAll('.section').forEach(s => s.style.display = 'none'); 
         document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active')); 
@@ -694,7 +815,11 @@
 
         if(id === 'eleves') showSubSection('sub-nouveau');
         if(id === 'paiements') actualiserListeRecherchePaiement();
-        if(id === 'personnel') { chargerStaff(); actualiserSelectStaffFiches(); }
+        if(id === "personnel") {
+            chargerStaff();
+            actualiserSelectStaffFiches();
+            chargerGrandLivrePaieUI();
+        }
         if(id === 'finance') { refreshUI(); chargerTableauMouvements(); chargerHistoriqueStaffGlobalUI(); }
         if(id === 'rapports-eleves') { genererRapportElevesOrdre(); }
         if(id === 'config') chargerConfig();
@@ -718,7 +843,15 @@
         document.getElementById('autreMotifContainer').style.display = (motif === "Autres") ? "block" : "none";
     }
 
-    // --- 4. GESTION ÉLÈVES ---
+    function showSubStaff(id) {
+        document.querySelectorAll('.sub-section-staff').forEach(el => el.style.display = 'none');
+        document.getElementById(id).style.display = 'block';
+        if(id === 'sub-staff-livre') {
+            chargerGrandLivrePaieUI();
+        }
+    }
+
+    // --- GESTION ÉLÈVES ---
     function ajouterEleve() {
         const mat = "CST" + String(matriculeCount).padStart(4, '0');
         const data = {
@@ -840,7 +973,7 @@
         };
     }
 
-    // --- 5. PAIEMENTS & REÇUS ---
+    // --- PAIEMENTS & REÇUS ---
     function genererReference(prefixe) {
         const d = new Date();
         const dateStr = `${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}`;
@@ -1048,9 +1181,15 @@
                 </div>`;
         }
 
+        let blocLogoReçu = "";
+        if (schoolData.logo) {
+            blocLogoReçu = `<div class="receipt-logo" style="display:block;"><img src="${schoolData.logo}" alt="Logo"></div>`;
+        }
+
         let html = `
             <div class="receipt-box">
                 <div class="receipt-header">
+                    ${blocLogoReçu}
                     <h1 style="margin:0; font-size:1.8rem; text-transform:uppercase;">${schoolData.name}</h1>
                     <p style="font-size:0.9rem; margin:5px 0;">${schoolData.addr}</p>
                     <p style="font-size:0.9rem;">Tél: ${schoolData.tel || '-'}</p>
@@ -1090,7 +1229,7 @@
 
     function fermerApercu() { document.getElementById('previewOverlay').style.display = 'none'; }
 
-    // --- 6. MOUVEMENTS DE CAISSE ---
+    // --- MOUVEMENTS DE CAISSE ---
     function ajouterMouvement(type) {
         let lib = type === 'ENTREE' ? document.getElementById('entreeLibelle').value : document.getElementById('depenseLibelle').value;
         let mt = type === 'ENTREE' ? Number(document.getElementById('entreeMontant').value) : Number(document.getElementById('depenseMontant').value);
@@ -1118,7 +1257,7 @@
         alert("Mouvement supprimé.");
     }
 
-    // --- 7. ACCÈS SÉCURISÉ ---
+    // --- ACCÈS SÉCURISÉ ---
     function declencherProtectionAdmin(callbackAction) {
         actionSecuriseeEnAttente = callbackAction;
         document.getElementById('overlayTitle').innerText = "🔒 ACTION SÉCURISÉE";
@@ -1137,14 +1276,14 @@
         });
     }
 
-    // --- 8. CALCULS DES TOTAUX ET BILANS ---
+    // --- CALCULS DES TOTAUX ET BILANS ---
     function refreshUI() {
         const effectifActif = eleves.filter(e => e.actif !== false).length;
         document.getElementById('statTotalEleves').innerText = effectifActif;
         document.getElementById('statTaux').innerText = tauxChange + " FC";
         
         const recScol = tousLesPaiements.reduce((s, p) => s + p.montant, 0);
-        const ent = autresMouvements.filter(m => m.type === 'ENTREE').reduce((s, m) => s + m.montant, 0);
+        const ent = ancientsMouvements = autresMouvements.filter(m => m.type === 'ENTREE').reduce((s, m) => s + m.montant, 0);
         const sorMouv = autresMouvements.filter(m => m.type === 'SORTIE').reduce((s, m) => s + m.montant, 0);
         
         let totalAvances = 0;
@@ -1171,13 +1310,6 @@
             const recMinerval = tousLesPaiements.filter(p => !p.motif.includes("Tranche") && !p.motif.includes("Accessoires") && ["Septembre","Octobre","Novembre","Décembre","Janvier","Février","Mars","Avril","Mai","Juin"].includes(p.motif)).reduce((s,p) => s + p.montant, 0);
             const recEtat = tousLesPaiements.filter(p => p.motif.includes("Tranche")).reduce((s,p) => s + p.montant, 0);
             const recAccessoires = tousLesPaiements.filter(p => p.motif.includes("Accessoires")).reduce((s,p) => s + p.montant, 0);
-            const recAutresPaiements = tousLesPaiements.reduce((s,p) => {
-                const m = p.motif;
-                if(!m.includes("Tranche") && !m.includes("Accessoires") && !["Septembre","Octobre","Novembre","Décembre","Janvier","Février","Mars","Avril","Mai","Juin"].includes(m)) {
-                    return s + p.montant;
-                }
-                return s;
-            }, 0);
 
             document.getElementById('financeRecettesMois').innerHTML = `
                 <div style="display:flex; justify-content:space-between; padding:4px 0;"><span>🏫 Minerval Général :</span><b>${recMinerval.toFixed(2)} $</b></div>
@@ -1197,13 +1329,11 @@
         const recAccessoires = tousLesPaiements.filter(p => p.motif.includes("Accessoires")).reduce((s,p) => s + p.montant, 0);
         const recAutresPaiements = tousLesPaiements.reduce((s,p) => {
             const m = p.motif;
-            if(!m.includes("Tranche") && !m.includes("Accessoires") && !["Septembre","Octobre","Novembre","Décembre","Janvier","Février","Mars","Avril","Mai","Juin"].includes(m)) {
-                return s + p.montant;
-            }
+            if(!m.includes("Tranche") && !m.includes("Accessoires") && !["Septembre","Octobre","Novembre","Décembre","Janvier","Février","Mars","Avril","Mai","Juin"].includes(m)) { return s + p.montant; }
             return s;
         }, 0);
 
-        const ent = ancientsmouvements = autresMouvements.filter(m => m.type === 'ENTREE').reduce((s, m) => s + m.montant, 0);
+        const ent = autresMouvements.filter(m => m.type === 'ENTREE').reduce((s, m) => s + m.montant, 0);
         const sorMouv = autresMouvements.filter(m => m.type === 'SORTIE').reduce((s, m) => s + m.montant, 0);
         
         let totalAvances = 0;
@@ -1215,9 +1345,15 @@
         const totalSorties = sorMouv + totalAvances;
         const netCaisse = totalRecettes - totalSorties;
 
+        let blocLogoReçu = "";
+        if (schoolData.logo) {
+            blocLogoReçu = `<div class="receipt-logo" style="display:block; margin-bottom:10px;"><img src="${schoolData.logo}" alt="Logo"></div>`;
+        }
+
         let html = `
             <div class="receipt-box" style="max-width:100%; border:3px solid #000;">
                 <div class="receipt-header">
+                    ${blocLogoReçu}
                     <h2>${schoolData.name.toUpperCase()}</h2>
                     <h3>RAPPORT FINANCIER EXÉCUTIF - EN DATE DU ${new Date().toLocaleDateString('fr-FR')}</h3>
                     <p>Taux de référence : 1 USD = ${tauxChange} FC</p>
@@ -1265,6 +1401,9 @@
         `).join('');
         document.getElementById('schoolNameInput').value = schoolData.name;
         document.getElementById('schoolAddress').value = schoolData.addr;
+        document.getElementById('schoolPhone').value = schoolData.tel || "";
+        base64LogoTemporaire = schoolData.logo || "";
+        document.getElementById('logoInput').value = ""; 
     }
 
     function ajouterClasse() {
@@ -1274,17 +1413,27 @@
 
     function supprimerClasse(i) { classes.splice(i,1); sauvegarder(); remplirSelects(); chargerConfig(); }
     function suppEleve(i) { eleves[i].actif = false; sauvegarder(); chargerElevesGestion(); refreshUI(); alert("Élève archivé."); }
+    
     function updateSchoolUI() { 
         document.getElementById('navSchoolName').innerText = schoolData.name; 
         document.getElementById('loginSchoolName').innerText = schoolData.name; 
-        document.getElementById('logoInitial').innerText = schoolData.name[0].toUpperCase(); 
+        
+        const conteneur = document.getElementById('logoContainer');
+        if (schoolData.logo) {
+            conteneur.innerHTML = `<img src="${schoolData.logo}" alt="Logo">`;
+        } else {
+            conteneur.innerHTML = schoolData.name ? schoolData.name[0].toUpperCase() : "E";
+        }
     }
     
     function sauverCoords() {
         schoolData.name = document.getElementById('schoolNameInput').value;
         schoolData.addr = document.getElementById('schoolAddress').value;
         schoolData.tel = document.getElementById('schoolPhone').value;
-        sauvegarder(); updateSchoolUI(); alert("Coordonnées mises à jour !");
+        if (base64LogoTemporaire) {
+            schoolData.logo = base64LogoTemporaire;
+        }
+        sauvegarder(); updateSchoolUI(); alert("Coordonnées et Logo mis à jour !");
     }
 
     function askSecurity(s, b) { targetSection = s; targetBtn = b; document.getElementById('overlayTitle').innerText = "🔑 DIRECTION"; document.getElementById('adminPassInput').value=""; document.getElementById('financeOverlay').style.display = 'flex'; }
@@ -1318,7 +1467,7 @@
         adminPass = newA; sauvegarder(); alert("Mot de passe admin modifié !");
     }
 
-    // --- 9. PERSONNEL ---
+    // --- PERSONNEL ---
     function ajouterStaff() {
         const nom = document.getElementById('staffNom').value;
         const fonction = document.getElementById('staffFonction').value || "Non précisée";
@@ -1326,11 +1475,8 @@
         if(nom && sal) {
             let localId = crypto.randomUUID();
             let nouvelAgent = { id: localId, nom, fonction, salaire_contractuel: sal, historiquePaiement: [] };
-            
             staff.push(nouvelAgent); 
-            sauvegarder(); 
-            chargerStaff(); 
-            actualiserSelectStaffFiches();
+            sauvegarder(); chargerStaff(); actualiserSelectStaffFiches();
             document.getElementById('staffNom').value = ""; document.getElementById('staffFonction').value = ""; document.getElementById('staffSalaire').value = "";
         }
     }
@@ -1357,25 +1503,17 @@
     }
 
     function genererPaie(idx, type) {
-        const mois = prompt("Pour quel mois ou motif ? (Ex: Septembre, Octobre, Mai...)");
+        const mois = prompt("Pour quel mois ou motif ? (Ex: Septembre...)");
         if(!mois) return;
         const montant = Number(prompt(`Montant de la ${type} pour ${staff[idx].nom} ($) :`));
-        
         if(montant > 0) {
             if(!staff[idx].historiquePaiement) staff[idx].historiquePaiement = [];
             const ref = genererReference('STAFF');
             const dateDuJour = new Date().toISOString().split('T')[0];
-
-            staff[idx].historiquePaiement.push({
-                ref: ref, mois: mois, type: type.toUpperCase(), montant: montant, date: dateDuJour
-            });
-            
+            staff[idx].historiquePaiement.push({ ref, mois, type: type.toUpperCase(), montant, date: dateDuJour });
             sauvegarder(); chargerStaff(); refreshUI();
-            
             if(confirm("Action enregistrée. Voir l'aperçu de la pièce de caisse ?")) {
-                imprimerRecu({
-                    ref: ref, nom: staff[idx].nom, typeMouvement: `${type.toUpperCase()} (${mois})`, montant: montant, date: dateDuJour
-                }, "STAFF");
+                imprimerRecu({ ref, nom: staff[idx].nom, typeMouvement: `${type.toUpperCase()} (${mois})`, montant, date: dateDuJour }, "STAFF");
             }
         }
     }
@@ -1383,51 +1521,78 @@
     function chargerHistoriqueStaffGlobalUI() {
         const tbody = document.getElementById('bodyHistoriqueStaffGlobal');
         let records = [];
-        
         staff.forEach(st => {
             if(st.historiquePaiement) {
                 st.historiquePaiement.forEach(p => {
-                    records.push({
-                        date: p.date, nom: st.nom, mois: p.mois, type: p.type, montant: p.montant, ref: p.ref, salaireBase: Number(st.salaire_contractuel || st.salaire || 0)
-                    });
+                    records.push({ date: p.date, nom: st.nom, mois: p.mois, type: p.type, montant: p.montant, ref: p.ref, salaireBase: Number(st.salaire_contractuel || st.salaire || 0) });
                 });
             }
         });
-
-        if(records.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="6">Aucun historique disponible</td></tr>'; return;
-        }
-
-        const parseDateStr = (str) => {
-            const p = str.split('-'); return p.length === 3 ? new Date(p[0], p[1] - 1, p[2]) : new Date(str);
-        };
-
+        if(records.length === 0) { tbody.innerHTML = '<tr><td colspan="6">Aucun historique disponible</td></tr>'; return; }
+        const parseDateStr = (str) => { const p = str.split('-'); return p.length === 3 ? new Date(p[0], p[1] - 1, p[2]) : new Date(str); };
         records.sort((a, b) => parseDateStr(a.date) - parseDateStr(b.date));
         let banqueSuiviSoldes = {}; 
-
         records.forEach(r => {
             if (r.type === 'PRIME') { r.resteDuCalculé = 0; } 
             else {
                 const cleMoisEmploye = `${r.nom.toLowerCase().trim()}-${r.mois.toLowerCase().trim()}`;
                 if (!(cleMoisEmploye in banqueSuiviSoldes)) { banqueSuiviSoldes[cleMoisEmploye] = r.salaireBase; }
-                banqueSuiviSoldes[cleMoisEmploye] -= r.montant;
-                r.resteDuCalculé = banqueSuiviSoldes[cleMoisEmploye];
+                banqueSuiviSoldes[cleMoisEmploye] -= r.montant; r.resteDuCalculé = banqueSuiviSoldes[cleMoisEmploye];
             }
         });
-
         records.sort((a, b) => parseDateStr(b.date) - parseDateStr(a.date));
-
         tbody.innerHTML = records.map(r => {
             let couleurReste = r.resteDuCalculé > 0 ? '#e74c3c' : '#27ae60';
-            return `<tr>
-                <td>${r.date}</td><td><b>${r.nom}</b></td><td>${r.mois}</td>
-                <td style="color:${r.type === 'AVANCE' ? 'red' : 'green'}">${r.type}</td>
-                <td><b>${r.montant} $</b></td><td style="font-weight:bold; color:${couleurReste}">${r.resteDuCalculé} $</td>
-            </tr>`;
+            return `<tr><td>${r.date}</td><td><b>${r.nom}</b></td><td>${r.mois}</td><td style="color:${r.type === 'AVANCE' ? 'red' : 'green'}">${r.type}</td>
+                <td><b>${r.montant} $</b></td><td style="font-weight:bold; color:${couleurReste}">${r.resteDuCalculé} $</td></tr>`;
         }).join('');
     }
 
-    // --- 10. REQUÊTES DES BULLETINS DE PAIE ---
+    function chargerGrandLivrePaieUI() {
+        const mois = document.getElementById("livreMoisSelect").value;
+        const tbody = document.querySelector("#tableGrandLivrePaie tbody");
+        let html = "";
+        let totalSalaire = 0, totalPrime = 0, totalAvance = 0, totalVerse = 0, totalReste = 0;
+
+        staff.forEach(st => {
+            const salaire = Number(st.salaire_contractuel || st.salaire || 0);
+            const hist = (st.historiquePaiement || []).filter(p => p.mois.toLowerCase() === mois.toLowerCase());
+            const primes = hist.filter(p => p.type === "PRIME").reduce((s,p)=>s+p.montant,0);
+            const avances = hist.filter(p => p.type === "AVANCE").reduce((s,p)=>s+p.montant,0);
+            const totalRecu = primes + avances; const resteDu = salaire - avances;
+
+            totalSalaire += salaire; totalPrime += primes; totalAvance += avances; totalVerse += totalRecu;
+            if(resteDu > 0) totalReste += resteDu;
+
+            html += `<tr><td>${st.nom}</td><td>${st.fonction || '-'}</td><td>${salaire.toFixed(2)} $</td><td style="color:green">${primes.toFixed(2)} $</td>
+                <td style="color:red">${avances.toFixed(2)} $</td><td>${totalRecu.toFixed(2)} $</td><td style="color:${resteDu>0?'red':'green'}; font-weight:bold;">${resteDu>0 ? resteDu.toFixed(2)+' $' : 'SOLDÉ'}</td></tr>`;
+        });
+        html += `<tr style="background:#f1f1f1; font-weight:bold;"><td colspan="2">TOTAL GÉNÉRAL</td><td>${totalSalaire.toFixed(2)} $</td><td style="color:green">${totalPrime.toFixed(2)} $</td>
+            <td style="color:red">${totalAvance.toFixed(2)} $</td><td>${totalVerse.toFixed(2)} $</td><td>${totalReste.toFixed(2)} $</td></tr>`;
+        tbody.innerHTML = html;
+    }
+
+    function imprimerGrandLivreMensuel() {
+        const table = document.getElementById("tableGrandLivrePaie").outerHTML;
+        document.getElementById('recuContent').style.display = 'none';
+        document.getElementById('rapportContent').style.display = 'block';
+        
+        let blocLogoReçu = "";
+        if (schoolData.logo) {
+            blocLogoReçu = `<div class="receipt-logo" style="display:block; margin-bottom:10px;"><img src="${schoolData.logo}" alt="Logo"></div>`;
+        }
+
+        document.getElementById('rapportContent').innerHTML = `
+            <div class="receipt-box">
+                ${blocLogoReçu}
+                <h2 style="text-align:center;">GRAND LIVRE DE PAIE</h2>
+                <p style="text-align:center;">${schoolData.name}</p>
+                <p style="text-align:center;">Mois : ${document.getElementById('livreMoisSelect').value}</p>
+                ${table}
+            </div>`;
+        document.getElementById('previewOverlay').style.display = 'flex';
+    }
+
     function imprimerFicheDePaieA4() {
         const idx = document.getElementById('ficheStaffSelect').value;
         const mois = document.getElementById('ficheMoisSelect').value;
@@ -1436,18 +1601,22 @@
         const st = staff[idx];
         const baseSal = Number(st.salaire_contractuel || st.salaire || 0);
         const histMois = st.historiquePaiement ? st.historiquePaiement.filter(p => p.mois.toLowerCase().trim() === mois.toLowerCase().trim()) : [];
-        
         const totalAvances = histMois.filter(p => p.type === 'AVANCE').reduce((s, p) => s + p.montant, 0);
         const totalPrimes = histMois.filter(p => p.type === 'PRIME').reduce((s, p) => s + p.montant, 0);
-        const netPaye = baseSal + totalPrimes - totalAvances;
-        const resteDu = baseSal - totalAvances;
+        const netPaye = baseSal + totalPrimes - totalAvances; const resteDu = baseSal - totalAvances;
 
         document.getElementById('recuContent').style.display = 'none';
         document.getElementById('rapportContent').style.display = 'block';
 
+        let blocLogoReçu = "";
+        if (schoolData.logo) {
+            blocLogoReçu = `<div class="receipt-logo" style="display:block; margin-bottom:10px;"><img src="${schoolData.logo}" alt="Logo"></div>`;
+        }
+
         let html = `
             <div class="receipt-box" style="border: 2px solid #000; padding: 25px;">
                 <div class="receipt-header">
+                    ${blocLogoReçu}
                     <h2 style="text-transform: uppercase; margin:0;">${schoolData.name}</h2>
                     <p>${schoolData.addr}</p>
                     <div style="margin-top:15px; border:2px solid #000; padding:10px; display:inline-block; font-weight:bold; font-size:1.3rem; background:#f9f9f9;">
@@ -1461,66 +1630,32 @@
                     <div><b>MONNAIE :</b> USD ($)</div>
                 </div>
                 <table style="width:100%; border-collapse:collapse; margin-top:15px;">
-                    <thead>
-                        <tr style="background:#eee;">
-                            <th style="border:1px solid #000; padding:8px;">LIBELLÉ DES ÉLÉMENTS DE SALAIRE</th>
-                            <th style="border:1px solid #000; padding:8px; text-align:right;">GAINS (+)</th>
-                            <th style="border:1px solid #000; padding:8px; text-align:right;">RETENUES (-)</th>
-                        </tr>
-                    </thead>
+                    <thead><tr style="background:#eee;"><th style="border:1px solid #000; padding:8px;">LIBELLÉ DES ÉLÉMENTS DE SALAIRE</th><th style="border:1px solid #000; padding:8px; text-align:right;">GAINS (+)</th><th style="border:1px solid #000; padding:8px; text-align:right;">RETENUES (-)</th></tr></thead>
                     <tbody>
-                        <tr>
-                            <td style="border:1px solid #000; padding:10px;">Salaire de Base Contractuel</td>
-                            <td style="border:1px solid #000; padding:10px; text-align:right;">${baseSal.toFixed(2)} $</td>
-                            <td style="border:1px solid #000; padding:10px; text-align:right;">0.00 $</td>
-                        </tr>
-                        <tr>
-                            <td style="border:1px solid #000; padding:10px;">Cumul des Primes Accordées</td>
-                            <td style="border:1px solid #000; padding:10px; text-align:right; color:green;">+${totalPrimes.toFixed(2)} $</td>
-                            <td style="border:1px solid #000; padding:10px; text-align:right;">0.00 $</td>
-                        </tr>
-                        <tr>
-                            <td style="border:1px solid #000; padding:10px;">Acomptes & Avances sur salaire perçus</td>
-                            <td style="border:1px solid #000; padding:10px; text-align:right;">0.00 $</td>
-                            <td style="border:1px solid #000; padding:10px; text-align:right; color:red;">-${totalAvances.toFixed(2)} $</td>
-                        </tr>
-                        <tr style="background:#f9f9f9; font-weight:bold;">
-                            <td style="border:1px solid #000; padding:12px; font-size:1.1rem;">NET NET À PAYER DIRECT</td>
-                            <td colspan="2" style="border:1px solid #000; padding:12px; text-align:right; font-size:1.3rem; color:var(--accent);">${netPaye.toFixed(2)} $</td>
-                        </tr>
+                        <tr><td style="border:1px solid #000; padding:10px;">Salaire de Base Contractuel</td><td style="border:1px solid #000; padding:10px; text-align:right;">${baseSal.toFixed(2)} $</td><td style="border:1px solid #000; padding:10px; text-align:right;">0.00 $</td></tr>
+                        <tr><td style="border:1px solid #000; padding:10px;">Cumul des Primes Accordées</td><td style="border:1px solid #000; padding:10px; text-align:right; color:green;">+${totalPrimes.toFixed(2)} $</td><td style="border:1px solid #000; padding:10px; text-align:right;">0.00 $</td></tr>
+                        <tr><td style="border:1px solid #000; padding:10px;">Acomptes & Avances sur salaire perçus</td><td style="border:1px solid #000; padding:10px; text-align:right;">0.00 $</td><td style="border:1px solid #000; padding:10px; text-align:right; color:red;">-${totalAvances.toFixed(2)} $</td></tr>
+                        <tr style="background:#f9f9f9; font-weight:bold;"><td style="border:1px solid #000; padding:12px; font-size:1.1rem;">NET NET À PAYER DIRECT</td><td colspan="2" style="border:1px solid #000; padding:12px; text-align:right; font-size:1.3rem; color:var(--accent);">${netPaye.toFixed(2)} $</td></tr>
                     </tbody>
                 </table>
                 <div style="margin-top:15px; background:#fff3e0; padding:10px; border:1px solid #ffe0b2; font-size:0.9rem; font-weight:bold;">
                     📌 STATUT DU SALAIRE MENSUEL : ${resteDu <= 0 ? '<span style="color:green;">MOIS COMPLÈTEMENT SOLDÉ (0$ DU)</span>' : `<span style="color:red;">RESTE À DEVOIR À L'AGENT : ${resteDu.toFixed(2)} $</span>`}
                 </div>
-                <div style="margin-top:40px; display:flex; justify-content:space-between; text-align:center;">
-                    <div style="width:40%; border-top:1px solid #000; padding-top:5px; font-size:0.9rem;">Signature de l'Employé</div>
-                    <div style="width:40%; border-top:1px solid #000; padding-top:5px; font-size:0.9rem;">L'Administrateur Gestionnaire</div>
-                </div>
-            </div>
-        `;
+                <div style="margin-top:40px; display:flex; justify-content:space-between; text-align:center;"><div style="width:40%; border-top:1px solid #000; padding-top:5px;">Signature Employé</div><div style="width:40%; border-top:1px solid #000; padding-top:5px;">L'Administrateur</div></div>
+            </div>`;
         document.getElementById('rapportContent').innerHTML = html;
         document.getElementById('previewOverlay').style.display = 'flex';
     }
 
-    function supprimerStaff(i) {
-        staff.splice(i,1); 
-        sauvegarder(); 
-        chargerStaff(); 
-        actualiserSelectStaffFiches(); 
-        refreshUI(); 
-        alert("Membre du personnel supprimé.");
-    }
+    function supprimerStaff(i) { staff.splice(i,1); sauvegarder(); chargerStaff(); actualiserSelectStaffFiches(); refreshUI(); alert("Membre du personnel supprimé."); }
     
-    // --- 11. GESTION DES RAPPORTS COMPLETS ---
+    // --- GESTION DES RAPPORTS COMPLETS ---
     function genererRapportElevesOrdre() {
         const classeTarget = document.getElementById('repClasseSelect').value;
         const motifTarget = document.getElementById('repMoisSelect').value;
         const typeFiltre = document.getElementById('repTypeSelect').value;
         const tbody = document.getElementById('bodyRapportEleves');
-
         if(!classeTarget) { tbody.innerHTML = '<tr><td colspan="4">Veuillez configurer une classe.</td></tr>'; return; }
-
         const elevesClasse = eleves.filter(e => e.classe === classeTarget && e.actif !== false);
         let html = "";
 
@@ -1528,35 +1663,29 @@
             if(typeFiltre === "GlobalInsolvable") {
                 const mesPaiements = tousLesPaiements.filter(p => p.matricule === e.matricule);
                 const totalPayeAnnee = mesPaiements.reduce((sum, p) => sum + p.montant, 0);
-                const totalAttenduAnnee = (e.tarif || 0) * 10; 
-                const detteGlobale = totalAttenduAnnee - totalPayeAnnee;
-
+                const totalAttenduAnnee = (e.tarif || 0) * 10; const detteGlobale = totalAttenduAnnee - totalPayeAnnee;
                 if(detteGlobale > 0) {
                     html += `<tr><td>${e.matricule}</td><td><b>${e.nom} ${e.postnom || ''}</b></td><td>${e.classe}</td>
-                    <td style="color:#e74c3c; font-weight:bold;">⚠️ DETTE GLOBALE : ${detteGlobale.toFixed(2)}$ <small>(Payé: ${totalPayeAnnee.toFixed(2)}$ / Attendu: ${totalAttenduAnnee}$)</small></td></tr>`;
+                    <td style="color:#e74c3c; font-weight:bold;">⚠️ DETTE GLOBALE : ${detteGlobale.toFixed(2)}$</td></tr>`;
                 }
             } else {
                 const paiementsDuMotif = tousLesPaiements.filter(p => p.matricule === e.matricule && p.motif.toLowerCase().includes(motifTarget.toLowerCase()));
                 const totalPayePourCeMotif = paiementsDuMotif.reduce((s, p) => s + p.montant, 0);
-                const tarifAttendu = e.tarif || 0;
-                const estEnOrdre = totalPayePourCeMotif >= tarifAttendu;
-                
+                const tarifAttendu = e.tarif || 0; const estEnOrdre = totalPayePourCeMotif >= tarifAttendu;
                 if(typeFiltre === "Ordre" && estEnOrdre) {
                     html += `<tr><td>${e.matricule}</td><td>${e.nom} ${e.postnom || ''}</td><td>${e.classe}</td><td style="color:#27ae60; font-weight:bold;">🟢 EN ORDRE (${totalPayePourCeMotif}$)</td></tr>`;
                 } else if(typeFiltre === "Dette" && !estEnOrdre) {
                     const resteA_Payer = tarifAttendu - totalPayePourCeMotif;
-                    html += `<tr><td>${e.matricule}</td><td>${e.nom} ${e.postnom || ''}</td><td>${e.classe}</td><td style="color:#e74c3c; font-weight:bold;">🔴 INSOLVABLE (Reste ${resteA_Payer.toFixed(2)}$)</td></tr>`;
+                    html += `<tr><td>${e.matricule}</td><td>${e.nom} ${e.postnom || ''}</td><td>${e.classe}</td><td style="color:#e74c3c; font-weight:bold;">🔴 INSOLVABLE (${resteA_Payer.toFixed(2)}$)</td></tr>`;
                 }
             }
         });
-
-        tbody.innerHTML = html || `<tr><td colspan="4" style="text-align:center;">Aucun élève trouvé pour ce critère.</td></tr>`;
+        tbody.innerHTML = html || `<tr><td colspan="4" style="text-align:center;">Aucun élève trouvé.</td></tr>`;
     }
 
     function imprimerRapportEleves() {
         document.getElementById('recuContent').style.display = 'none';
         document.getElementById('rapportContent').style.display = 'block';
-
         const classeTarget = document.getElementById('repClasseSelect').value;
         const motifTarget = document.getElementById('repMoisSelect').value;
         const typeFiltre = document.getElementById('repTypeSelect').value;
@@ -1567,59 +1696,33 @@
             if(typeFiltre === "GlobalInsolvable") {
                 const mesPaiements = tousLesPaiements.filter(p => p.matricule === e.matricule);
                 const totalPayeAnnee = mesPaiements.reduce((sum, p) => sum + p.montant, 0);
-                const totalAttenduAnnee = (e.tarif || 0) * 10;
-                const detteGlobale = totalAttenduAnnee - totalPayeAnnee;
-
-                if(detteGlobale > 0) {
-                    trs += `<tr><td style="border:1px solid #000; padding:8px;">${e.matricule}</td><td style="border:1px solid #000; padding:8px;">${e.nom} ${e.postnom || ''}</td><td style="border:1px solid #000; padding:8px; color:red; font-weight:bold;">DETTE ANNUELLE : ${detteGlobale.toFixed(2)} $</td></tr>`;
-                }
+                const totalAttenduAnnee = (e.tarif || 0) * 10; const detteGlobale = totalAttenduAnnee - totalPayeAnnee;
+                if(detteGlobale > 0) { trs += `<tr><td style="border:1px solid #000; padding:8px;">${e.matricule}</td><td style="border:1px solid #000; padding:8px;">${e.nom} ${e.postnom || ''}</td><td style="border:1px solid #000; padding:8px; color:red; font-weight:bold;">DETTE : ${detteGlobale.toFixed(2)} $</td></tr>`; }
             } else {
                 const paiementsDuMotif = tousLesPaiements.filter(p => p.matricule === e.matricule && p.motif.toLowerCase().includes(motifTarget.toLowerCase()));
                 const totalPayePourCeMotif = paiementsDuMotif.reduce((s, p) => s + p.montant, 0);
-                const tarifAttendu = e.tarif || 0;
-                const estEnOrdre = totalPayePourCeMotif >= tarifAttendu;
-                
-                if(typeFiltre === "Ordre" && estEnOrdre) {
-                    trs += `<tr><td style="border:1px solid #000; padding:8px;">${e.matricule}</td><td style="border:1px solid #000; padding:8px;">${e.nom} ${e.postnom || ''}</td><td style="border:1px solid #000; padding:8px; color:green; font-weight:bold;">EN ORDRE (${totalPayePourCeMotif}$)</td></tr>`;
-                } else if(typeFiltre === "Dette" && !estEnOrdre) {
-                    const resteA_Payer = tarifAttendu - totalPayePourCeMotif;
-                    trs += `<tr><td style="border:1px solid #000; padding:8px;">${e.matricule}</td><td style="border:1px solid #000; padding:8px;">${e.nom} ${e.postnom || ''}</td><td style="border:1px solid #000; padding:8px; color:red; font-weight:bold;">INSOLVABLE (Reste ${resteA_Payer.toFixed(2)}$)</td></tr>`;
-                }
+                const tarifAttendu = e.tarif || 0; const estEnOrdre = totalPayePourCeMotif >= tarifAttendu;
+                if(typeFiltre === "Ordre" && estEnOrdre) { trs += `<tr><td style="border:1px solid #000; padding:8px;">${e.matricule}</td><td style="border:1px solid #000; padding:8px;">${e.nom} ${e.postnom || ''}</td><td style="border:1px solid #000; padding:8px; color:green;">EN ORDRE</td></tr>`; }
+                else if(typeFiltre === "Dette" && !estEnOrdre) { trs += `<tr><td style="border:1px solid #000; padding:8px;">${e.matricule}</td><td style="border:1px solid #000; padding:8px;">${e.nom} ${e.postnom || ''}</td><td style="border:1px solid #000; padding:8px; color:red;">INSOLVABLE</td></tr>`; }
             }
         });
 
-        let titreDoc = typeFiltre === 'GlobalInsolvable' ? "RAPPORT FINANCIER DES INSOLVABILITÉS GLOBALES (ANNUEL)" : `RAPPORT FINANCIER : ÉLÈVES ${typeFiltre === 'Ordre' ? 'EN ORDRE' : 'INSOLVABLES'}`;
+        let titreDoc = typeFiltre === 'GlobalInsolvable' ? "RAPPORT INSOLVABILITÉS GLOBALES" : `RAPPORT FINANCIER ÉLÈVES`;
+        let blocLogoReçu = "";
+        if (schoolData.logo) { blocLogoReçu = `<div class="receipt-logo" style="display:block; margin-bottom:10px;"><img src="${schoolData.logo}" alt="Logo"></div>`; }
 
         let html = `
             <div class="receipt-box" style="border:2px solid #000; padding:30px;">
-                <div class="receipt-header">
-                    <h2>${schoolData.name}</h2>
-                    <h3>${titreDoc}</h3>
-                    <p><b>Classe :</b> ${classeTarget} ${typeFiltre !== 'GlobalInsolvable' ? `| <b>Frais visé :</b> ${motifTarget}` : ''}</p>
-                    <p>Date d'édition : ${new Date().toLocaleDateString('fr-FR')}</p>
-                </div>
+                <div class="receipt-header">${blocLogoReçu}<h2>${schoolData.name}</h2><h3>${titreDoc}</h3><p>Classe : ${classeTarget}</p></div>
                 <table style="width:100%; border-collapse:collapse; margin-top:20px;">
-                    <thead>
-                        <tr>
-                            <th style="border:1px solid #000; padding:8px; background:#eee;">MATRICULE</th>
-                            <th style="border:1px solid #000; padding:8px; background:#eee;">NOM COMPLET</th>
-                            <th style="border:1px solid #000; padding:8px; background:#eee;">STATUT FINANCIER</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        ${trs || '<tr><td colspan="3" style="text-align:center; padding:10px;">Aucun élève ne correspond à ces critères actuels.</td></tr>'}
-                    </tbody>
+                    <thead><tr><th style="border:1px solid #000; padding:8px; background:#eee;">MATRICULE</th><th style="border:1px solid #000; padding:8px; background:#eee;">NOM COMPLET</th><th style="border:1px solid #000; padding:8px; background:#eee;">STATUT</th></tr></thead>
+                    <tbody>${trs || '<tr><td colspan="3" style="text-align:center;">Aucun élève trouvé.</td></tr>'}</tbody>
                 </table>
-                <div style="margin-top:40px; text-align:right;">
-                    <p>La Direction Générale</p>
-                </div>
-            </div>
-        `;
+            </div>`;
         document.getElementById('rapportContent').innerHTML = html;
         document.getElementById('previewOverlay').style.display = 'flex';
     }
 
-    // Lance l'initialisation de la base SQLite au démarrage
     window.addEventListener('DOMContentLoaded', initialiserBaseDeDonnees);
 </script>
 </body>
