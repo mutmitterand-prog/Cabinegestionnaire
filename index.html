@@ -102,8 +102,9 @@
 
     <div id="loginOverlay">
         <div class="login-box">
-            <h2 id="loginSchoolName">🔐 CHARGEMENT...</h2>
-            <input type="password" id="pinInput" placeholder="Code PIN" style="width: 100%; text-align: center; margin: 15px 0; font-size: 1.2rem;">
+            <h2 id="loginSchoolName" style="margin-bottom: 15px;">🔐 CHARGEMENT...</h2>
+            <select id="userLoginSelect" style="width: 100%; padding: 10px; margin-bottom: 12px; border-radius: 5px; text-align: center; font-size: 1rem; background: #fff; color: #333;"></select>
+            <input type="password" id="pinInput" placeholder="Code secret / PIN" style="width: 100%; text-align: center; margin-bottom: 15px; font-size: 1.2rem;">
             <button class="btn-main" onclick="checkLogin()" style="width: 100%; padding: 12px;">OUVRIR LA SESSION</button>
         </div>
     </div>
@@ -482,6 +483,24 @@
         </section>
 
         <section id="config" class="section" style="display:none;">
+            <div class="card" style="background: #efebe9;">
+                <h3>👥 Gestion Globale des Utilisateurs</h3>
+                <p style="font-size: 0.8rem; margin-bottom: 12px; color: #5d4037;">Créez et supprimez les comptes utilisateurs habilités à se connecter à l'application.</p>
+                <div class="form-group" style="background: rgba(255,255,255,0.6); padding: 12px; border-radius: 6px; margin-bottom: 15px;">
+                    <input type="text" id="newUsername" placeholder="Identifiant / Nom d'utilisateur">
+                    <input type="password" id="newUserPass" placeholder="Mot de passe / Code">
+                    <select id="newUserRole" style="max-width: 200px;">
+                        <option value="Administrateur">Administrateur</option>
+                        <option value="Encodeur">Encodeur</option>
+                    </select>
+                    <button class="btn-main" onclick="ajouterUtilisateurSQL()">Créer le Compte</button>
+                </div>
+                <table id="tableUsersConfig">
+                    <thead><tr><th>Identifiant</th><th>Privilèges / Rôle</th><th>Action</th></tr></thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+
             <div class="card" style="background: #e1f5fe;">
                 <h3>🏫 Coordonnées & Logo de l'École</h3>
                 <div class="form-group" style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
@@ -568,15 +587,26 @@
     let actionSecuriseeEnAttente = null;
     let base64LogoTemporaire = "";
 
+    // Variable globale de session utilisateur
+    let sessionUtilisateurConnecte = null;
+
+    const path = require('path');
+
     async function initialiserBaseDeDonnees() {
         try {
+            if (typeof __dirname === 'undefined') {
+                window.__dirname = process.cwd();
+            }
+
             const SQL = await initSqlJs({
-                locateFile: file => `https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.6.2/${file}`
+                locateFile: file => `./${file}`
             });
 
             if (fs.existsSync(DB_FILE)) {
                 const fileBuffer = fs.readFileSync(DB_FILE);
                 db = new SQL.Database(fileBuffer);
+                // S'assurer que les nouvelles tables structurelles existent
+                db.run(`CREATE TABLE IF NOT EXISTS utilisateurs (username TEXT PRIMARY KEY, password TEXT, role TEXT);`);
                 chargerToutesLesDonneesSQL();
             } else {
                 db = new SQL.Database();
@@ -584,7 +614,18 @@
                 migerAnciennesDonneesSiExistantes();
                 sauvegarderSQL();
             }
+            
+            // Création forcée d'un administrateur par défaut si aucun compte n'existe
+            let verifUser = db.exec("SELECT COUNT(*) FROM utilisateurs");
+            if(verifUser.length && verifUser[0].values[0][0] === 0){
+                db.run("INSERT INTO utilisateurs (username, password, role) VALUES ('admin', '1234', 'Administrateur');");
+                sauvegarderSQL();
+            }
+
             document.getElementById('loginSchoolName').innerText = schoolData.name;
+            remplirSelectConnexionUtilisateurs();
+            
+            console.log("🚀 Base de données SQLite locale initialisée avec succès (100% Hors-ligne) !");
         } catch (err) {
             alert("Erreur lors de l'initialisation de la base SQLite, basculement en mode secours.");
             console.error(err);
@@ -600,6 +641,7 @@
             CREATE TABLE IF NOT EXISTS autres_mouvements (id INTEGER PRIMARY KEY AUTOINCREMENT, ref TEXT, type TEXT, libelle TEXT, montant REAL, date TEXT);
             CREATE TABLE IF NOT EXISTS staff (id TEXT PRIMARY KEY, nom TEXT, fonction TEXT, salaire REAL);
             CREATE TABLE IF NOT EXISTS staff_paiements (id INTEGER PRIMARY KEY AUTOINCREMENT, staff_id TEXT, ref TEXT, mois TEXT, type TEXT, montant REAL, date TEXT);
+            CREATE TABLE IF NOT EXISTS utilisateurs (username TEXT PRIMARY KEY, password TEXT, role TEXT);
         `);
         db.run("INSERT INTO configuration VALUES ('matriculeCount', '1'), ('currentPin', '1234'), ('adminPass', '1234'), ('tauxChange', '2250'), ('schoolData', ?)", [JSON.stringify(schoolData)]);
         db.run("INSERT INTO classes (cat, nom, tarif) VALUES (2, '1ère Primaire', 50)");
@@ -711,6 +753,82 @@
         sauvegarderSQL();
     }
 
+    // --- LOGIQUE MULTI-UTILISATEURS SQLITE ---
+    function remplirSelectConnexionUtilisateurs() {
+        try {
+            const select = document.getElementById('userLoginSelect');
+            let res = db.exec("SELECT username FROM utilisateurs");
+            if (res.length) {
+                select.innerHTML = res[0].values.map(u => `<option value="${u[0]}">👤 ${u[0]}</option>`).join('');
+            } else {
+                select.innerHTML = `<option value="admin">👤 admin</option>`;
+            }
+        } catch(e) { console.error(e); }
+    }
+
+    function checkLogin() {
+        const selectedUser = document.getElementById('userLoginSelect').value;
+        const typedPass = document.getElementById('pinInput').value;
+
+        let query = db.exec("SELECT username, password, role FROM utilisateurs WHERE username = ?", [selectedUser]);
+        if (query.length && query[0].values[0][1] === typedPass) {
+            sessionUtilisateurConnecte = {
+                username: query[0].values[0][0],
+                role: query[0].values[0][2]
+            };
+            document.getElementById('loginOverlay').style.display = 'none';
+            init();
+        } else { 
+            alert("Code secret incorrect pour cet utilisateur."); 
+        }
+    }
+
+    function ajouterUtilisateurSQL() {
+        const user = document.getElementById('newUsername').value.trim();
+        const pass = document.getElementById('newUserPass').value.trim();
+        const role = document.getElementById('newUserRole').value;
+
+        if(!user || !pass) return alert("Veuillez remplir l'identifiant et le code secret.");
+
+        try {
+            db.run("INSERT INTO utilisateurs (username, password, role) VALUES (?, ?, ?)", [user, pass, role]);
+            sauvegarderSQL();
+            alert(`Compte '${user}' créé avec succès.`);
+            document.getElementById('newUsername').value = "";
+            document.getElementById('newUserPass').value = "";
+            chargerTableauUtilisateursUI();
+        } catch(e) {
+            alert("Erreur ou cet identifiant existe déjà.");
+        }
+    }
+
+    function chargerTableauUtilisateursUI() {
+        const tbody = document.querySelector('#tableUsersConfig tbody');
+        let res = db.exec("SELECT username, role FROM utilisateurs");
+        if(res.length) {
+            tbody.innerHTML = res[0].values.map(u => `
+                <tr>
+                    <td><b>${u[0]}</b></td>
+                    <td><span style="padding:4px 8px; border-radius:4px; font-size:0.75rem; font-weight:bold; background:${u[1]==='Administrateur'?'#eaeded':'#d4efdf'}; color:${u[1]==='Administrateur'?'#2c3e50':'#196f3d'}">${u[1]}</span></td>
+                    <td><button class="btn-del" onclick="supprimerUtilisateurSQL('${u[0]}')">X</button></td>
+                </tr>
+            `).join('');
+        } else {
+            tbody.innerHTML = `<tr><td colspan="3">Aucun utilisateur configuré</td></tr>`;
+        }
+    }
+
+    function supprimerUtilisateurSQL(username) {
+        if(username === 'admin') return alert("Le compte 'admin' racine ne peut pas être supprimé.");
+        if(sessionUtilisateurConnecte && sessionUtilisateurConnecte.username === username) return alert("Impossible de supprimer votre propre compte de session active.");
+        
+        if (confirm(`Voulez-vous détruire le compte de l'utilisateur '${username}' ?`)) {
+            db.run("DELETE FROM utilisateurs WHERE username = ?", [username]);
+            sauvegarderSQL();
+            chargerTableauUtilisateursUI();
+        }
+    }
+
     // --- LOGO EN BASE64 ---
     function chargerLogoBase64(input) {
         if (input.files && input.files[0]) {
@@ -724,6 +842,13 @@
 
     // --- IMPORT / EXPORT JSON ---
     function exporterDonneesJSON() {
+        // Extraction des users pour l'exportation globale
+        let usersList = [];
+        let resUsers = db.exec("SELECT username, password, role FROM utilisateurs");
+        if(resUsers.length) {
+            resUsers[0].values.forEach(u => usersList.push({username: u[0], password: u[1], role: u[2]}));
+        }
+
         const donneesGlobales = {
             version: "2026_v1",
             matriculeCount,
@@ -735,7 +860,8 @@
             eleves,
             staff,
             tousLesPaiements,
-            autresMouvements
+            autresMouvements,
+            utilisateurs: usersList
         };
         const chaineJson = JSON.stringify(donneesGlobales, null, 4);
         const blob = new Blob([chaineJson], { type: "application/json" });
@@ -776,6 +902,15 @@
                     autresMouvements = d.autresMouvements || [];
 
                     sauvegarder();
+
+                    if(d.utilisateurs && d.utilisateurs.length) {
+                        db.run("DELETE FROM utilisateurs");
+                        d.utilisateurs.forEach(u => {
+                            db.run("INSERT INTO utilisateurs VALUES (?,?,?)", [u.username, u.password, u.role]);
+                        });
+                        sauvegarderSQL();
+                    }
+
                     updateSchoolUI();
                     remplirSelects();
                     refreshUI();
@@ -787,14 +922,6 @@
             };
             lecteur.readAsText(input.files[0]);
         }
-    }
-
-    // --- AUTHENTIFICATION ---
-    function checkLogin() {
-        if(document.getElementById('pinInput').value === currentPin) {
-            document.getElementById('loginOverlay').style.display='none';
-            init();
-        } else { alert("Code PIN incorrect."); }
     }
 
     function init() {
@@ -975,10 +1102,7 @@
 
     // --- PAIEMENTS & REÇUS ---
     function genererReference(prefixe) {
-        const d = new Date();
-        const dateStr = `${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}`;
-        const unique = Math.random().toString(36).substring(2, 5).toUpperCase();
-        return `${prefixe}-${dateStr}-${Date.now().toString().slice(-4)}-${unique}`;
+        return `${prefixe}-${Date.now()}-${crypto.randomUUID().slice(0,8)}`;
     }
 
     function actualiserListeRecherchePaiement() {
@@ -1283,7 +1407,7 @@
         document.getElementById('statTaux').innerText = tauxChange + " FC";
         
         const recScol = tousLesPaiements.reduce((s, p) => s + p.montant, 0);
-        const ent = ancientsMouvements = autresMouvements.filter(m => m.type === 'ENTREE').reduce((s, m) => s + m.montant, 0);
+        const ent = autresMouvements.filter(m => m.type === 'ENTREE').reduce((s, m) => s + m.montant, 0);
         const sorMouv = autresMouvements.filter(m => m.type === 'SORTIE').reduce((s, m) => s + m.montant, 0);
         
         let totalAvances = 0;
@@ -1333,7 +1457,7 @@
             return s;
         }, 0);
 
-        const ent = autresMouvements.filter(m => m.type === 'ENTREE').reduce((s, m) => s + m.montant, 0);
+        const ent = ancientsEntrees = autresMouvements.filter(m => m.type === 'ENTREE').reduce((s, m) => s + m.montant, 0);
         const sorMouv = autresMouvements.filter(m => m.type === 'SORTIE').reduce((s, m) => s + m.montant, 0);
         
         let totalAvances = 0;
@@ -1404,6 +1528,9 @@
         document.getElementById('schoolPhone').value = schoolData.tel || "";
         base64LogoTemporaire = schoolData.logo || "";
         document.getElementById('logoInput').value = ""; 
+
+        // Charger l'affichage du nouveau volet des comptes utilisateurs
+        chargerTableauUtilisateursUI();
     }
 
     function ajouterClasse() {
@@ -1411,7 +1538,15 @@
         sauvegarder(); remplirSelects(); chargerConfig();
     }
 
-    function supprimerClasse(i) { classes.splice(i,1); sauvegarder(); remplirSelects(); chargerConfig(); }
+    function supprimerClasse(i) {
+        if(confirm("Voulez-vous supprimer cette classe ?")){
+            classes.splice(i, 1);
+            sauvegarder();
+            chargerConfig();
+            remplirSelects();
+        }
+    }
+    
     function suppEleve(i) { eleves[i].actif = false; sauvegarder(); chargerElevesGestion(); refreshUI(); alert("Élève archivé."); }
     
     function updateSchoolUI() { 
@@ -1647,7 +1782,14 @@
         document.getElementById('previewOverlay').style.display = 'flex';
     }
 
-    function supprimerStaff(i) { staff.splice(i,1); sauvegarder(); chargerStaff(); actualiserSelectStaffFiches(); refreshUI(); alert("Membre du personnel supprimé."); }
+    function supprimerStaff(i) {
+        if (confirm("Voulez-vous retirer cet agent du personnel actif ?")) {
+            staff.splice(i, 1);
+            sauvegarder();
+            chargerStaff();
+            actualiserSelectStaffFiches();
+        }
+    }
     
     // --- GESTION DES RAPPORTS COMPLETS ---
     function genererRapportElevesOrdre() {
