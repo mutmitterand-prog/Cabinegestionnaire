@@ -125,6 +125,7 @@
         <div class="nav-logo">
             <div id="logoContainer" class="logo-container">E</div>
             <h2 id="navSchoolName">ÉCOLE</h2>
+            <p id="currentUserDisplay" style="font-size: 0.8rem; color: #27ae60; font-weight: bold; margin-top: 5px;"></p>
         </div>
         <div class="nav-item active" onclick="showSection('eleves', this); showSubSection('sub-nouveau')">👤 Inscriptions</div>
         <div class="nav-item" onclick="showSection('paiements', this)">💰 Minerval & FC</div>
@@ -132,8 +133,9 @@
         <div class="nav-item finance-btn" onclick="askSecurity('finance', this)">📊 Rapport Finance</div>
         <div class="nav-item" onclick="showSection('rapports-eleves', this)">📋 Rapports Élèves</div>
         <div class="nav-item" onclick="askSecurity('config', this)">⚙️ Configuration</div>
-        <div style="margin-top: auto; padding: 20px;">
-            <p id="displayTauxNav" style="font-size: 0.7rem; color: #95a5a6; margin-bottom: 10px;">Taux: 1$ = 2250 FC</p>
+        <div style="margin-top: auto; padding: 20px; display: flex; flex-direction: column; gap: 10px;">
+            <button onclick="deconnexionUtilisateur()" style="background: var(--danger); width: 100%; padding: 10px; font-size: 0.8rem; border-radius: 5px; font-weight: bold;">🚪 DÉCONNEXION</button>
+            <p id="displayTauxNav" style="font-size: 0.7rem; color: #95a5a6; text-align: center;">Taux: 1$ = 2250 FC</p>
             <button onclick="executerResetSecurise()" style="background:#444; width:100%; font-size: 0.7rem; opacity: 0.5;">RÉINITIALISER TOUT</button>
         </div>
     </nav>
@@ -155,29 +157,39 @@
 
             <div id="sub-nouveau" class="sub-section" style="display: flex; gap: 20px; align-items: flex-start;">
                 <div class="card" style="flex: 2;">
-                    <h3 id="formTitleEleve">Fiche d'Inscription Complète</h3>
-                    <div class="form-group" style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
-                        <input type="text" id="nom" placeholder="Nom">
-                        <input type="text" id="postnom" placeholder="Post-nom">
-                        <input type="text" id="prenom" placeholder="Prénom">
-                        <select id="sexeEleve">
-                            <option value="">-- Sexe --</option>
-                            <option value="M">Masculin (M)</option>
-                            <option value="F">Féminin (F)</option>
-                        </select>
-                        <input type="text" id="nationalite" placeholder="Nationalité" value="Congolaise">
-                        <input type="text" id="lieuNaiss" placeholder="Lieu de naissance">
-                        <input type="date" id="dateNaiss" title="Date de naissance">
-                        <select id="classeSelect"></select>
-                        
-                        <input type="text" id="nomPere" placeholder="Nom du Père">
-                        <input type="text" id="telPere" placeholder="Tél. Père">
-                        <input type="text" id="nomMere" placeholder="Nom de la Mère">
-                        <input type="text" id="telMere" placeholder="Tél. Mère">
-                        
-                        <input type="number" id="tarifIndiv" placeholder="Tarif Admis $">
-                        <button id="btnSaveEleve" class="btn-main" onclick="ajouterEleve()" style="grid-column: span 2; padding: 12px;">ENREGISTRER L'ÉLÈVE</button>
-                    </div>
+                    <h3 id="formTitleEleve"<h3 style="grid-column: span 2; margin-bottom: 5px;">Fiche d'Inscription Complète</h3>
+<div class="form-group" style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+    <!-- Informations personnelles -->
+    <input type="text" id="nom" placeholder="Nom">
+    <input type="text" id="postnom" placeholder="Post-nom">
+    <input type="text" id="prenom" placeholder="Prénom">
+    <select id="sexeEleve">
+        <option value="">-- Sexe --</option>
+        <option value="M">Masculin (M)</option>
+        <option value="F">Féminin (F)</option>
+    </select>
+    <input type="text" id="nationalite" placeholder="Nationalité" value="Congolaise">
+    <input type="text" id="lieuNaiss" placeholder="Lieu de naissance">
+    <input type="date" id="dateNaiss" title="Date de naissance">
+    <select id="classeSelect"></select>
+    
+    <!-- NOUVEAU BLOC : Origine et Résidence -->
+    <input type="text" id="province" placeholder="Province d'origine">
+    <input type="text" id="territoire" placeholder="Territoire d'origine">
+    <input type="text" id="secteur" placeholder="Secteur / Chefferie">
+    <input type="text" id="village" placeholder="Village d'origine">
+    <input type="text" id="adresse" placeholder="Adresse de résidence ou domicile" style="grid-column: span 2;">
+    
+    <!-- Informations des parents -->
+    <input type="text" id="nomPere" placeholder="Nom du Père">
+    <input type="text" id="telPere" placeholder="Tél. Père">
+    <input type="text" id="nomMere" placeholder="Nom de la Mère">
+    <input type="text" id="telMere" placeholder="Tél. Mère">
+    
+    <!-- Tarif et Validation -->
+    <input type="number" id="tarifIndiv" placeholder="Tarif Admis $">
+    <button id="btnSaveEleve" class="btn-main" onclick="gererClicBoutonEleve()" style="grid-column: span 2; padding: 12px;">ENREGISTRER L'ÉLÈVE</button>
+</div>
                 </div>
 
                 <div class="card" style="flex: 1.5; max-height: 550px; overflow-y: auto;">
@@ -485,16 +497,19 @@
         <section id="config" class="section" style="display:none;">
             <div class="card" style="background: #efebe9;">
                 <h3>👥 Gestion Globale des Utilisateurs</h3>
-                <p style="font-size: 0.8rem; margin-bottom: 12px; color: #5d4037;">Créez et supprimez les comptes utilisateurs habilités à se connecter à l'application.</p>
-                <div class="form-group" style="background: rgba(255,255,255,0.6); padding: 12px; border-radius: 6px; margin-bottom: 15px;">
+                <p style="font-size: 0.8rem; margin-bottom: 12px; color: #5d4037;">Créez, modifiez les mots de passe et supprimez les comptes utilisateurs.</p>
+                
+                <div id="formEditionUtilisateur" class="form-group" style="background: rgba(255,255,255,0.6); padding: 12px; border-radius: 6px; margin-bottom: 15px;">
                     <input type="text" id="newUsername" placeholder="Identifiant / Nom d'utilisateur">
                     <input type="password" id="newUserPass" placeholder="Mot de passe / Code">
                     <select id="newUserRole" style="max-width: 200px;">
                         <option value="Administrateur">Administrateur</option>
                         <option value="Encodeur">Encodeur</option>
                     </select>
-                    <button class="btn-main" onclick="ajouterUtilisateurSQL()">Créer le Compte</button>
+                    <button class="btn-main" id="btnActionUser" onclick="ajouterUtilisateurSQL()">Créer le Compte</button>
+                    <button class="btn-del" id="btnAnnulerModifUser" onclick="reinitialiserFormUtilisateur()" style="display:none;">Annuler</button>
                 </div>
+                
                 <table id="tableUsersConfig">
                     <thead><tr><th>Identifiant</th><th>Privilèges / Rôle</th><th>Action</th></tr></thead>
                     <tbody></tbody>
@@ -567,9 +582,22 @@
 
     <script>
     // --- MOTEUR SQLITE LOCAL (NW.JS + FS) ---
-    let db;
+        let db;
     const fs = require('fs');
-    const DB_FILE = "ecole.db";
+    const path = require('path');
+
+    // --- CORRECTION INNO SETUP : Redirection vers AppData sécurisé ---
+    const appDataPath = process.env.APPDATA || (process.platform === 'darwin' ? process.env.HOME + '/Library/Preferences' : process.env.HOME + '/.local/share');
+    const appFolder = path.join(appDataPath, 'MutGestion');
+
+    // On s'assure que le dossier MutGestion existe dans AppData
+    if (!fs.existsSync(appFolder)) {
+        fs.mkdirSync(appFolder, { recursive: true });
+    }
+
+    // Le fichier ecole.db pointera toujours ici, même après installation
+    const DB_FILE = path.join(appFolder, 'ecole.db');
+    // -----------------------------------------------------------------
 
     let matriculeCount = 1;
     let currentPin = "1234";
@@ -590,8 +618,6 @@
     // Variable globale de session utilisateur
     let sessionUtilisateurConnecte = null;
 
-    const path = require('path');
-
     async function initialiserBaseDeDonnees() {
         try {
             if (typeof __dirname === 'undefined') {
@@ -605,7 +631,6 @@
             if (fs.existsSync(DB_FILE)) {
                 const fileBuffer = fs.readFileSync(DB_FILE);
                 db = new SQL.Database(fileBuffer);
-                // S'assurer que les nouvelles tables structurelles existent
                 db.run(`CREATE TABLE IF NOT EXISTS utilisateurs (username TEXT PRIMARY KEY, password TEXT, role TEXT);`);
                 chargerToutesLesDonneesSQL();
             } else {
@@ -615,7 +640,6 @@
                 sauvegarderSQL();
             }
             
-            // Création forcée d'un administrateur par défaut si aucun compte n'existe
             let verifUser = db.exec("SELECT COUNT(*) FROM utilisateurs");
             if(verifUser.length && verifUser[0].values[0][0] === 0){
                 db.run("INSERT INTO utilisateurs (username, password, role) VALUES ('admin', '1234', 'Administrateur');");
@@ -632,72 +656,133 @@
         }
     }
 
-    function creerStructureTables() {
-        db.run(`
-            CREATE TABLE IF NOT EXISTS configuration (cle TEXT PRIMARY KEY, valeur TEXT);
-            CREATE TABLE IF NOT EXISTS classes (id INTEGER PRIMARY KEY AUTOINCREMENT, cat INT, nom TEXT, tarif REAL);
-            CREATE TABLE IF NOT EXISTS eleves (matricule TEXT PRIMARY KEY, nom TEXT, postnom TEXT, prenom TEXT, sexe TEXT, classe TEXT, tarif REAL, nationalite TEXT, lieuNaiss TEXT, dateNaiss TEXT, nomPere TEXT, telPere TEXT, nomMere TEXT, telMere TEXT, actif INT);
-            CREATE TABLE IF NOT EXISTS paiements (id INTEGER PRIMARY KEY, ref TEXT, nomEleve TEXT, matricule TEXT, classe TEXT, motif TEXT, montantOriginal REAL, devise TEXT, montant REAL, date TEXT);
-            CREATE TABLE IF NOT EXISTS autres_mouvements (id INTEGER PRIMARY KEY AUTOINCREMENT, ref TEXT, type TEXT, libelle TEXT, montant REAL, date TEXT);
-            CREATE TABLE IF NOT EXISTS staff (id TEXT PRIMARY KEY, nom TEXT, fonction TEXT, salaire REAL);
-            CREATE TABLE IF NOT EXISTS staff_paiements (id INTEGER PRIMARY KEY AUTOINCREMENT, staff_id TEXT, ref TEXT, mois TEXT, type TEXT, montant REAL, date TEXT);
-            CREATE TABLE IF NOT EXISTS utilisateurs (username TEXT PRIMARY KEY, password TEXT, role TEXT);
-        `);
-        db.run("INSERT INTO configuration VALUES ('matriculeCount', '1'), ('currentPin', '1234'), ('adminPass', '1234'), ('tauxChange', '2250'), ('schoolData', ?)", [JSON.stringify(schoolData)]);
-        db.run("INSERT INTO classes (cat, nom, tarif) VALUES (2, '1ère Primaire', 50)");
-    }
 
+    function creerStructureTables() {
+    db.run(`
+        CREATE TABLE IF NOT EXISTS configuration (cle TEXT PRIMARY KEY, valeur TEXT);
+        CREATE TABLE IF NOT EXISTS classes (id INTEGER PRIMARY KEY AUTOINCREMENT, cat INT, nom TEXT, tarif REAL);
+        
+        CREATE TABLE IF NOT EXISTS eleves (
+            matricule TEXT PRIMARY KEY, 
+            nom TEXT, 
+            postnom TEXT, 
+            prenom TEXT, 
+            sexe TEXT, 
+            classe TEXT, 
+            tarif REAL, 
+            nationalite TEXT, 
+            lieuNaiss TEXT, 
+            dateNaiss TEXT, 
+            province TEXT,
+            territoire TEXT,
+            secteur TEXT,
+            village TEXT,
+            adresse TEXT,
+            nomPere TEXT, 
+            telPere TEXT, 
+            nomMere TEXT, 
+            telMere TEXT, 
+            actif INT
+        );
+        
+        CREATE TABLE IF NOT EXISTS paiements (id INTEGER PRIMARY KEY, ref TEXT, nomEleve TEXT, matricule TEXT, classe TEXT, motif TEXT, montantOriginal REAL, devise TEXT, montant REAL, date TEXT);
+        CREATE TABLE IF NOT EXISTS autres_mouvements (id INTEGER PRIMARY KEY AUTOINCREMENT, ref TEXT, type TEXT, libelle TEXT, montant REAL, date TEXT);
+        CREATE TABLE IF NOT EXISTS staff (id TEXT PRIMARY KEY, nom TEXT, fonction TEXT, salaire REAL);
+        CREATE TABLE IF NOT EXISTS staff_paiements (id INTEGER PRIMARY KEY AUTOINCREMENT, staff_id TEXT, ref TEXT, mois TEXT, type TEXT, montant REAL, date TEXT);
+        CREATE TABLE IF NOT EXISTS utilisateurs (username TEXT PRIMARY KEY, password TEXT, role TEXT);
+    `);
+    
+    db.run("INSERT INTO configuration VALUES ('matriculeCount', '1'), ('currentPin', '1234'), ('adminPass', '1234'), ('tauxChange', '2250'), ('schoolData', ?)", [JSON.stringify(schoolData)]);
+    db.run("INSERT INTO classes (cat, nom, tarif) VALUES (2, '1ère Primaire', 50)");
+}
     function chargerToutesLesDonneesSQL() {
-        let res = db.exec("SELECT cle, valeur FROM configuration");
-        if(res.length) {
-            res[0].values.forEach(row => {
-                if(row[0] === 'matriculeCount') matriculeCount = Number(row[1]);
-                if(row[0] === 'currentPin') currentPin = row[1];
-                if(row[0] === 'adminPass') adminPass = row[1];
-                if(row[0] === 'tauxChange') tauxChange = Number(row[1]);
-                if(row[0] === 'schoolData') {
-                    schoolData = JSON.parse(row[1]);
-                    if(!schoolData.logo) schoolData.logo = "";
-                }
-            });
-        }
-        classes = [];
-        res = db.exec("SELECT cat, nom, tarif FROM classes");
-        if(res.length) {
-            res[0].values.forEach(r => classes.push({cat: r[0], nom: r[1], tarif: r[2]}));
-        }
-        eleves = [];
-        res = db.exec("SELECT matricule, nom, postnom, prenom, sexe, classe, tarif, nationalite, lieuNaiss, dateNaiss, nomPere, telPere, nomMere, telMere, actif FROM eleves");
-        if(res.length) {
-            res[0].values.forEach(r => eleves.push({
-                matricule: r[0], nom: r[1], postnom: r[2], prenom: r[3], sexe: r[4], classe: r[5], tarif: r[6], nationalite: r[7], lieuNaiss: r[8], dateNaiss: r[9], nomPere: r[10], telPere: r[11], nomMere: r[12], telMere: r[13], actif: r[14] === 1
-            }));
-        }
-        tousLesPaiements = [];
-        res = db.exec("SELECT id, ref, nomEleve, matricule, classe, motif, montantOriginal, devise, montant, date FROM paiements");
-        if(res.length) {
-            res[0].values.forEach(r => tousLesPaiements.push({
-                id: r[0], ref: r[1], nomEleve: r[2], matricule: r[3], classe: r[4], motif: r[5], montantOriginal: r[6], devise: r[7], montant: r[8], date: r[9]
-            }));
-        }
-        autresMouvements = [];
-        res = db.exec("SELECT ref, type, libelle, montant, date FROM autres_mouvements");
-        if(res.length) {
-            res[0].values.forEach(r => autresMouvements.push({ref: r[0], type: r[1], libelle: r[2], montant: r[3], date: r[4]}));
-        }
-        staff = [];
-        res = db.exec("SELECT id, nom, fonction, salaire FROM staff");
-        if(res.length) {
-            res[0].values.forEach(r => {
-                let agent = { id: r[0], nom: r[1], fonction: r[2], salaire_contractuel: r[3], historiquePaiement: [] };
-                let pRes = db.exec("SELECT ref, mois, type, montant, date FROM staff_paiements WHERE staff_id = ?", [agent.id]);
-                if(pRes.length) {
-                    pRes[0].values.forEach(p => agent.historiquePaiement.push({ref: p[0], mois: p[1], type: p[2], montant: p[3], date: p[4]}));
-                }
-                staff.push(agent);
-            });
-        }
+    let res = db.exec("SELECT cle, valeur FROM configuration");
+    if(res.length) {
+        res[0].values.forEach(row => {
+            if(row[0] === 'matriculeCount') matriculeCount = Number(row[1]);
+            if(row[0] === 'currentPin') currentPin = row[1];
+            if(row[0] === 'adminPass') adminPass = row[1];
+            if(row[0] === 'tauxChange') tauxChange = Number(row[1]);
+            if(row[0] === 'schoolData') {
+                schoolData = JSON.parse(row[1]);
+                if(!schoolData.logo) schoolData.logo = "";
+            }
+        });
     }
+    
+    classes = [];
+    res = db.exec("SELECT cat, nom, tarif FROM classes");
+    if(res.length) {
+        res[0].values.forEach(r => classes.push({cat: r[0], nom: r[1], tarif: r[2]}));
+    }
+    
+    // --- PROTECTION INTÉGRALE CONTRE LES CRASHES D'INDEX ---
+    eleves = [];
+    res = db.exec("SELECT * FROM eleves"); // On prend tout d'un coup
+    if(res.length) {
+        const columns = res[0].columns;
+        res[0].values.forEach(r => {
+            // On crée un objet temporaire pour lire par nom de colonne
+            let rowData = {};
+            columns.forEach((colName, index) => {
+                rowData[colName] = r[index];
+            });
+
+            // On injecte proprement dans le tableau sans se soucier de l'ordre
+            eleves.push({
+                matricule: rowData.matricule,
+                nom: rowData.nom,
+                postnom: rowData.postnom,
+                prenom: rowData.prenom,
+                sexe: rowData.sexe,
+                classe: rowData.classe,
+                tarif: Number(rowData.tarif),
+                nationalite: rowData.nationalite,
+                lieuNaiss: rowData.lieuNaiss,
+                dateNaiss: rowData.dateNaiss,
+                province: rowData.province || "",
+                territoire: rowData.territoire || "",
+                secteur: rowData.secteur || "",
+                village: rowData.village || "",
+                adresse: rowData.adresse || "",
+                nomPere: rowData.nomPere,
+                telPere: rowData.telPere,
+                nomMere: rowData.nomMere,
+                telMere: rowData.telMere,
+                actif: rowData.actif === 1
+            });
+        });
+    }
+    // -------------------------------------------------------------
+    
+    tousLesPaiements = [];
+    res = db.exec("SELECT id, ref, nomEleve, matricule, classe, motif, montantOriginal, devise, montant, date FROM paiements");
+    if(res.length) {
+        res[0].values.forEach(r => tousLesPaiements.push({
+            id: r[0], ref: r[1], nomEleve: r[2], matricule: r[3], classe: r[4], motif: r[5], montantOriginal: r[6], devise: r[7], montant: r[8], date: r[9]
+        }));
+    }
+    
+    autresMouvements = [];
+    res = db.exec("SELECT ref, type, libelle, montant, date FROM autres_mouvements");
+    if(res.length) {
+        res[0].values.forEach(r => autresMouvements.push({ref: r[0], type: r[1], libelle: r[2], montant: r[3], date: r[4]}));
+    }
+    
+    staff = [];
+    res = db.exec("SELECT id, nom, fonction, salaire FROM staff");
+    if(res.length) {
+        res[0].values.forEach(r => {
+            let agent = { id: r[0], nom: r[1], fonction: r[2], salaire_contractuel: r[3], historiquePaiement: [] };
+            let pRes = db.exec("SELECT ref, mois, type, montant, date FROM staff_paiements WHERE staff_id = ?", [agent.id]);
+            if(pRes.length) {
+                pRes[0].values.forEach(p => agent.historiquePaiement.push({ref: p[0], mois: p[1], type: p[2], montant: p[3], date: p[4]}));
+            }
+            staff.push(agent);
+        });
+    }
+}
+
 
     function migerAnciennesDonneesSiExistantes() {
         if(localStorage.getItem('t2_eleves')) {
@@ -777,9 +862,22 @@
                 role: query[0].values[0][2]
             };
             document.getElementById('loginOverlay').style.display = 'none';
+            document.getElementById('pinInput').value = ""; // Vider après connexion
+            document.getElementById('currentUserDisplay').innerText = `Utilisateur: ${sessionUtilisateurConnecte.username} (${sessionUtilisateurConnecte.role})`;
             init();
         } else { 
             alert("Code secret incorrect pour cet utilisateur."); 
+        }
+    }
+
+    // Fonction de déconnexion
+    function deconnexionUtilisateur() {
+        if (confirm("Voulez-vous fermer votre session active ?")) {
+            sessionUtilisateurConnecte = null;
+            document.getElementById('currentUserDisplay').innerText = "";
+            remplirSelectConnexionUtilisateurs();
+            document.getElementById('loginOverlay').style.display = 'flex';
+            showSection('eleves', document.querySelector('.nav-item')); // Remettre par défaut
         }
     }
 
@@ -794,12 +892,56 @@
             db.run("INSERT INTO utilisateurs (username, password, role) VALUES (?, ?, ?)", [user, pass, role]);
             sauvegarderSQL();
             alert(`Compte '${user}' créé avec succès.`);
-            document.getElementById('newUsername').value = "";
-            document.getElementById('newUserPass').value = "";
+            reinitialiserFormUtilisateur();
             chargerTableauUtilisateursUI();
         } catch(e) {
             alert("Erreur ou cet identifiant existe déjà.");
         }
+    }
+
+    // Préparation du formulaire pour la modification
+    function preparerModifUtilisateur(username, role) {
+        document.getElementById('newUsername').value = username;
+        document.getElementById('newUsername').readOnly = true; // Empêcher le changement d'identifiant unique
+        document.getElementById('newUserPass').value = ""; // Laisser vide pour saisie du nouveau mot de passe
+        document.getElementById('newUserPass').placeholder = "Entrez le nouveau mot de passe";
+        document.getElementById('newUserRole').value = role;
+        
+        const btnAction = document.getElementById('btnActionUser');
+        btnAction.innerText = "Mettre à jour le mot de passe";
+        btnAction.className = "btn-finance";
+        btnAction.onclick = function() { modifierMotDePasseSQL(); };
+        
+        document.getElementById('btnAnnulerModifUser').style.display = "inline-block";
+    }
+
+    function modifierMotDePasseSQL() {
+        const user = document.getElementById('newUsername').value;
+        const newPass = document.getElementById('newUserPass').value.trim();
+        const role = document.getElementById('newUserRole').value;
+
+        if(!newPass) return alert("Veuillez saisir un nouveau mot de passe.");
+
+        db.run("UPDATE utilisateurs SET password = ?, role = ? WHERE username = ?", [newPass, role, user]);
+        sauvegarderSQL();
+        alert(`Le mot de passe de l'utilisateur '${user}' a été mis à jour.`);
+        
+        reinitialiserFormUtilisateur();
+        chargerTableauUtilisateursUI();
+    }
+
+    function reinitialiserFormUtilisateur() {
+        document.getElementById('newUsername').value = "";
+        document.getElementById('newUsername').readOnly = false;
+        document.getElementById('newUserPass').value = "";
+        document.getElementById('newUserPass').placeholder = "Mot de passe / Code";
+        
+        const btnAction = document.getElementById('btnActionUser');
+        btnAction.innerText = "Créer le Compte";
+        btnAction.className = "btn-main";
+        btnAction.onclick = ajouterUtilisateurSQL;
+        
+        document.getElementById('btnAnnulerModifUser').style.display = "none";
     }
 
     function chargerTableauUtilisateursUI() {
@@ -810,7 +952,10 @@
                 <tr>
                     <td><b>${u[0]}</b></td>
                     <td><span style="padding:4px 8px; border-radius:4px; font-size:0.75rem; font-weight:bold; background:${u[1]==='Administrateur'?'#eaeded':'#d4efdf'}; color:${u[1]==='Administrateur'?'#2c3e50':'#196f3d'}">${u[1]}</span></td>
-                    <td><button class="btn-del" onclick="supprimerUtilisateurSQL('${u[0]}')">X</button></td>
+                    <td>
+                        <button class="btn-info" onclick="preparerModifUtilisateur('${u[0]}', '${u[1]}')">Modifier Clé</button>
+                        <button class="btn-del" onclick="supprimerUtilisateurSQL('${u[0]}')">X</button>
+                    </td>
                 </tr>
             `).join('');
         } else {
@@ -842,7 +987,6 @@
 
     // --- IMPORT / EXPORT JSON ---
     function exporterDonneesJSON() {
-        // Extraction des users pour l'exportation globale
         let usersList = [];
         let resUsers = db.exec("SELECT username, password, role FROM utilisateurs");
         if(resUsers.length) {
@@ -977,44 +1121,72 @@
             chargerGrandLivrePaieUI();
         }
     }
+    function gererClicBoutonEleve() {
+    if (indexEleveEnCoursDeModification === null) {
+        ajouterEleve();
+    } else {
+        validerChangementsEleve(indexEleveEnCoursDeModification);
+    }
+}
 
     // --- GESTION ÉLÈVES ---
     function ajouterEleve() {
-        const mat = "CST" + String(matriculeCount).padStart(4, '0');
-        const data = {
-            matricule: mat,
-            nom: document.getElementById('nom').value.toUpperCase(),
-            postnom: document.getElementById('postnom').value.toUpperCase(),
-            prenom: document.getElementById('prenom').value,
-            sexe: document.getElementById('sexeEleve').value,
-            classe: document.getElementById('classeSelect').value,
-            tarif: Number(document.getElementById('tarifIndiv').value),
-            nationalite: document.getElementById('nationalite').value,
-            lieuNaiss: document.getElementById('lieuNaiss').value,
-            dateNaiss: document.getElementById('dateNaiss').value,
-            nomPere: document.getElementById('nomPere').value,
-            telPere: document.getElementById('telPere').value,
-            nomMere: document.getElementById('nomMere').value,
-            telMere: document.getElementById('telMere').value,
-            actif: true 
-        };
-        if(data.nom && data.classe) {
-            eleves.push(data); matriculeCount++;
-            sauvegarder(); chargerListeRapide(); refreshUI();
-            alert("Inscrit ! Matricule : " + mat);
-            viderChampsInscr();
-        }
+    const mat = "CST" + String(matriculeCount).padStart(4, '0');
+    const data = {
+        matricule: mat,
+        nom: document.getElementById('nom').value.toUpperCase(),
+        postnom: document.getElementById('postnom').value.toUpperCase(),
+        prenom: document.getElementById('prenom').value,
+        sexe: document.getElementById('sexeEleve').value,
+        classe: document.getElementById('classeSelect').value,
+        tarif: Number(document.getElementById('tarifIndiv').value),
+        nationalite: document.getElementById('nationalite').value,
+        lieuNaiss: document.getElementById('lieuNaiss').value,
+        dateNaiss: document.getElementById('dateNaiss').value,
+        
+        // --- AJOUT DES NOUVELLES DONNÉES D'ORIGINE ET RÉSIDENCE ---
+        province: document.getElementById('province').value,
+        territoire: document.getElementById('territoire').value,
+        secteur: document.getElementById('secteur').value,
+        village: document.getElementById('village').value,
+        adresse: document.getElementById('adresse').value,
+        // ---------------------------------------------------------
+        
+        nomPere: document.getElementById('nomPere').value,
+        telPere: document.getElementById('telPere').value,
+        nomMere: document.getElementById('nomMere').value,
+        telMere: document.getElementById('telMere').value,
+        actif: true 
+    };
+    
+    if(data.nom && data.classe) {
+        eleves.push(data); 
+        matriculeCount++;
+        sauvegarder(); 
+        chargerListeRapide(); 
+        refreshUI();
+        alert("Inscrit ! Matricule : " + mat);
+        viderChampsInscr();
     }
+}
+
 
     function viderChampsInscr() {
-        ["nom", "postnom", "prenom", "tarifIndiv", "lieuNaiss", "dateNaiss", "nomPere", "telPere", "nomMere", "telMere"].forEach(id => {
-            const el = document.getElementById(id); if(el) el.value = "";
-        });
-        document.getElementById('formTitleEleve').innerText = "Fiche d'Inscription Complète";
-        const btn = document.getElementById('btnSaveEleve');
-        btn.innerText = "ENREGISTRER L'ÉLÈVE";
-        btn.onclick = ajouterEleve;
-    }
+    [
+        "nom", "postnom", "prenom", "tarifIndiv", "lieuNaiss", "dateNaiss", 
+        "province", "territoire", "secteur", "village", "adresse", 
+        "nomPere", "telPere", "nomMere", "telMere"
+    ].forEach(id => {
+        const el = document.getElementById(id); 
+        if(el) el.value = "";
+    });
+    
+    document.getElementById('formTitleEleve').innerText = "Fiche d'Inscription Complète";
+    
+    const btn = document.getElementById('btnSaveEleve');
+    btn.innerText = "ENREGISTRER L'ÉLÈVE";
+    indexEleveEnCoursDeModification = null; 
+}
 
     function chargerListeRapide() {
         const query = document.getElementById('searchQuick').value.toLowerCase();
@@ -1058,48 +1230,78 @@
         }).join('');
     }
 
-    function ouvrirModification(idx) {
-        const e = eleves[idx];
-        showSubSection('sub-nouveau');
-        document.getElementById('formTitleEleve').innerText = "MODIFIER : " + e.matricule;
-        document.getElementById('nom').value = e.nom;
-        document.getElementById('postnom').value = e.postnom;
-        document.getElementById('prenom').value = e.prenom;
-        document.getElementById('sexeEleve').value = e.sexe;
-        document.getElementById('classeSelect').value = e.classe;
-        document.getElementById('tarifIndiv').value = e.tarif;
-        document.getElementById('nationalite').value = e.nationalite;
-        document.getElementById('lieuNaiss').value = e.lieuNaiss;
-        document.getElementById('dateNaiss').value = e.dateNaiss;
-        document.getElementById('nomPere').value = e.nomPere;
-        document.getElementById('telPere').value = e.telPere;
-        document.getElementById('nomMere').value = e.nomMere;
-        document.getElementById('telMere').value = e.telMere;
+    // 1. UNE VARIABLE GLOBALE UNIQUE POUR SAVOIR QUI ON MODIFIE
+let indexEleveEnCoursDeModification = null;
 
-        const btn = document.getElementById('btnSaveEleve');
-        btn.innerText = "SAUVEGARDER LES MODIFICATIONS";
-        btn.onclick = function() {
-            eleves[idx] = {
-                ...e,
-                nom: document.getElementById('nom').value.toUpperCase(),
-                postnom: document.getElementById('postnom').value.toUpperCase(),
-                prenom: document.getElementById('prenom').value,
-                sexe: document.getElementById('sexeEleve').value,
-                classe: document.getElementById('classeSelect').value,
-                tarif: Number(document.getElementById('tarifIndiv').value),
-                nationalite: document.getElementById('nationalite').value,
-                lieuNaiss: document.getElementById('lieuNaiss').value,
-                dateNaiss: document.getElementById('dateNaiss').value,
-                nomPere: document.getElementById('nomPere').value,
-                telPere: document.getElementById('telPere').value,
-                nomMere: document.getElementById('nomMere').value,
-                telMere: document.getElementById('telMere').value
-            };
-            sauvegarder(); alert("Mise à jour réussie !");
-            viderChampsInscr(); chargerElevesGestion();
-        };
-    }
+// 2. LA FONCTION QUI SE CONTENTE D'OUVRIR ET REMPLIR LES CASES
+// --- CORRECTION DU NOM DE LA FONCTION AVEC UN "O" ---
+function ouvrirModification(idx) {
+    indexEleveEnCoursDeModification = idx; 
+    const e = eleves[idx];
+    
+    showSubSection('sub-nouveau');
+    
+    document.getElementById('formTitleEleve').innerText = "MODIFIER : " + e.matricule;
+    document.getElementById('nom').value = e.nom || '';
+    document.getElementById('postnom').value = e.postnom || '';
+    document.getElementById('prenom').value = e.prenom || '';
+    document.getElementById('sexeEleve').value = e.sexe || '';
+    document.getElementById('classeSelect').value = e.classe || '';
+    document.getElementById('tarifIndiv').value = e.tarif || '';
+    document.getElementById('nationalite').value = e.nationalite || 'Congolaise';
+    document.getElementById('lieuNaiss').value = e.lieuNaiss || '';
+    document.getElementById('dateNaiss').value = e.dateNaiss || '';
+    
+    document.getElementById('province').value = e.province || '';
+    document.getElementById('territoire').value = e.territoire || '';
+    document.getElementById('secteur').value = e.secteur || '';
+    document.getElementById('village').value = e.village || '';
+    document.getElementById('adresse').value = e.adresse || '';
+    
+    document.getElementById('nomPere').value = e.nomPere || '';
+    document.getElementById('telPere').value = e.telPere || '';
+    document.getElementById('nomMere').value = e.nomMere || '';
+    document.getElementById('telMere').value = e.telMere || '';
 
+    const btn = document.getElementById('btnSaveEleve');
+    btn.innerText = "SAUVEGARDER LES MODIFICATIONS";
+}
+
+// 3. LA FONCTION QUI ENREGISTRE SANS RE-APPELER ABRIRMODIFICATION
+function validerChangementsEleve(idx) {
+    const e = eleves[idx];
+    
+    eleves[idx] = {
+        ...e,
+        nom: document.getElementById('nom').value.toUpperCase(),
+        postnom: document.getElementById('postnom').value.toUpperCase(),
+        prenom: document.getElementById('prenom').value,
+        sexe: document.getElementById('sexeEleve').value,
+        classe: document.getElementById('classeSelect').value,
+        tarif: Number(document.getElementById('tarifIndiv').value),
+        nationalite: document.getElementById('nationalite').value,
+        lieuNaiss: document.getElementById('lieuNaiss').value,
+        dateNaiss: document.getElementById('dateNaiss').value,
+        
+        province: document.getElementById('province').value,
+        territoire: document.getElementById('territoire').value,
+        secteur: document.getElementById('secteur').value,
+        village: document.getElementById('village').value,
+        adresse: document.getElementById('adresse').value,
+        
+        nomPere: document.getElementById('nomPere').value,
+        telPere: document.getElementById('telPere').value,
+        nomMere: document.getElementById('nomMere').value,
+        telMere: document.getElementById('telMere').value
+    };
+    
+    sauvegarder(); 
+    alert("Mise à jour réussie !");
+    
+    indexEleveEnCoursDeModification = null; 
+    viderChampsInscr(); 
+    chargerElevesGestion();
+}
     // --- PAIEMENTS & REÇUS ---
     function genererReference(prefixe) {
         return `${prefixe}-${Date.now()}-${crypto.randomUUID().slice(0,8)}`;
@@ -1184,7 +1386,7 @@
         }
         htmlSubdivise += `</tbody></table>`;
 
-        document.getElementById('historiqueSubdiviseConteneur').innerHTML = htmlSubdivise;
+         document.getElementById('historiqueSubdiviseConteneur').innerHTML = htmlSubdivise;
     }
 
     function voirRecu(ref) {
@@ -1258,7 +1460,7 @@
         const ref = document.getElementById('refCheckInput').value.trim();
         const res = document.getElementById('verifResult');
         const p = tousLesPaiements.find(x => x.ref === ref);
-        const m = autresMouvements.find(x => x.ref === ref);
+        const m = ancientsMouvement = autresMouvements.find(x => x.ref === ref);
 
         if(p) {
             res.style.color = "green";
@@ -1408,7 +1610,7 @@
         
         const recScol = tousLesPaiements.reduce((s, p) => s + p.montant, 0);
         const ent = autresMouvements.filter(m => m.type === 'ENTREE').reduce((s, m) => s + m.montant, 0);
-        const sorMouv = autresMouvements.filter(m => m.type === 'SORTIE').reduce((s, m) => s + m.montant, 0);
+        const sorMouv = ancientsSorMouv = autresMouvements.filter(m => m.type === 'SORTIE').reduce((s, m) => s + m.montant, 0);
         
         let totalAvances = 0;
         staff.forEach(st => {
@@ -1457,7 +1659,7 @@
             return s;
         }, 0);
 
-        const ent = ancientsEntrees = autresMouvements.filter(m => m.type === 'ENTREE').reduce((s, m) => s + m.montant, 0);
+        const ent = autresMouvements.filter(m => m.type === 'ENTREE').reduce((s, m) => s + m.montant, 0);
         const sorMouv = autresMouvements.filter(m => m.type === 'SORTIE').reduce((s, m) => s + m.montant, 0);
         
         let totalAvances = 0;
@@ -1529,7 +1731,6 @@
         base64LogoTemporaire = schoolData.logo || "";
         document.getElementById('logoInput').value = ""; 
 
-        // Charger l'affichage du nouveau volet des comptes utilisateurs
         chargerTableauUtilisateursUI();
     }
 
