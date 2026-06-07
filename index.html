@@ -619,43 +619,50 @@
     let sessionUtilisateurConnecte = null;
 
     async function initialiserBaseDeDonnees() {
-        try {
-            if (typeof __dirname === 'undefined') {
-                window.__dirname = process.cwd();
-            }
-
-            const SQL = await initSqlJs({
-                locateFile: file => `./${file}`
-            });
-
-            if (fs.existsSync(DB_FILE)) {
-                const fileBuffer = fs.readFileSync(DB_FILE);
-                db = new SQL.Database(fileBuffer);
-                db.run(`CREATE TABLE IF NOT EXISTS utilisateurs (username TEXT PRIMARY KEY, password TEXT, role TEXT);`);
-                chargerToutesLesDonneesSQL();
-            } else {
-                db = new SQL.Database();
-                creerStructureTables();
-                migerAnciennesDonneesSiExistantes();
-                sauvegarderSQL();
-            }
-            
-            let verifUser = db.exec("SELECT COUNT(*) FROM utilisateurs");
-            if(verifUser.length && verifUser[0].values[0][0] === 0){
-                db.run("INSERT INTO utilisateurs (username, password, role) VALUES ('admin', '1234', 'Administrateur');");
-                sauvegarderSQL();
-            }
-
-            document.getElementById('loginSchoolName').innerText = schoolData.name;
-            remplirSelectConnexionUtilisateurs();
-            
-            console.log("🚀 Base de données SQLite locale initialisée avec succès (100% Hors-ligne) !");
-        } catch (err) {
-            alert("Erreur lors de l'initialisation de la base SQLite, basculement en mode secours.");
-            console.error(err);
+    try {
+        if (typeof __dirname === 'undefined') {
+            window.__dirname = process.cwd();
         }
-    }
 
+        const SQL = await initSqlJs({
+            locateFile: file => `./${file}`
+        });
+
+        if (fs.existsSync(DB_FILE)) {
+            const fileBuffer = fs.readFileSync(DB_FILE);
+            db = new SQL.Database(fileBuffer);
+            
+            // SÉCURITÉ : On s'assure que TOUTES les tables requises existent bel et bien
+            db.run(`CREATE TABLE IF NOT EXISTS utilisateurs (username TEXT PRIMARY KEY, password TEXT, role TEXT);`);
+            db.run(`CREATE TABLE IF NOT EXISTS config (cle TEXT PRIMARY KEY, valeur TEXT);`);
+            db.run(`CREATE TABLE IF NOT EXISTS eleves (
+                matricule TEXT PRIMARY KEY, nom TEXT, postnom TEXT, prenom TEXT, sexe TEXT, classe TEXT, tarif REAL, nationalite TEXT, lieuNaiss TEXT, dateNaiss TEXT,
+                province TEXT, territoire TEXT, secteur TEXT, village TEXT, adresse TEXT, nomPere TEXT, telPere TEXT, nomMere TEXT, telMere TEXT, actif INTEGER
+            );`);
+
+            chargerToutesLesDonneesSQL();
+        } else {
+            db = new SQL.Database();
+            creerStructureTables();
+            migerAnciennesDonneesSiExistantes();
+            sauvegarderSQL();
+        }
+        
+        let verifUser = db.exec("SELECT COUNT(*) FROM utilisateurs");
+        if(verifUser.length && verifUser[0].values[0][0] === 0){
+            db.run("INSERT INTO utilisateurs (username, password, role) VALUES ('admin', '1234', 'Administrateur');");
+            sauvegarderSQL();
+        }
+
+        document.getElementById('loginSchoolName').innerText = schoolData.name;
+        remplirSelectConnexionUtilisateurs();
+        
+        console.log("🚀 Base de données SQLite locale initialisée avec succès (100% Hors-ligne) !");
+    } catch (err) {
+        alert("Erreur lors de l'initialisation de la base SQLite, basculement en mode secours.");
+        console.error(err);
+    }
+}
 
     function creerStructureTables() {
     db.run(`
@@ -696,92 +703,146 @@
     db.run("INSERT INTO classes (cat, nom, tarif) VALUES (2, '1ère Primaire', 50)");
 }
     function chargerToutesLesDonneesSQL() {
-    let res = db.exec("SELECT cle, valeur FROM configuration");
-    if(res.length) {
-        res[0].values.forEach(row => {
-            if(row[0] === 'matriculeCount') matriculeCount = Number(row[1]);
-            if(row[0] === 'currentPin') currentPin = row[1];
-            if(row[0] === 'adminPass') adminPass = row[1];
-            if(row[0] === 'tauxChange') tauxChange = Number(row[1]);
-            if(row[0] === 'schoolData') {
-                schoolData = JSON.parse(row[1]);
-                if(!schoolData.logo) schoolData.logo = "";
-            }
-        });
-    }
-    
-    classes = [];
-    res = db.exec("SELECT cat, nom, tarif FROM classes");
-    if(res.length) {
-        res[0].values.forEach(r => classes.push({cat: r[0], nom: r[1], tarif: r[2]}));
-    }
-    
-    // --- PROTECTION INTÉGRALE CONTRE LES CRASHES D'INDEX ---
-    eleves = [];
-    res = db.exec("SELECT * FROM eleves"); // On prend tout d'un coup
-    if(res.length) {
-        const columns = res[0].columns;
-        res[0].values.forEach(r => {
-            // On crée un objet temporaire pour lire par nom de colonne
-            let rowData = {};
-            columns.forEach((colName, index) => {
-                rowData[colName] = r[index];
-            });
+    try {
+        // 1. CHARGEMENT DE LA CONFIGURATION (Logo, coordonnées, taux, etc.)
+        // On essaie d'abord la table 'config' (utilisée par l'import), sinon on regarde 'configuration'
+        let tableConfigName = "config";
+        try {
+            db.exec("SELECT 1 FROM config LIMIT 1");
+        } catch(e) {
+            tableConfigName = "configuration";
+        }
 
-            // On injecte proprement dans le tableau sans se soucier de l'ordre
-            eleves.push({
-                matricule: rowData.matricule,
-                nom: rowData.nom,
-                postnom: rowData.postnom,
-                prenom: rowData.prenom,
-                sexe: rowData.sexe,
-                classe: rowData.classe,
-                tarif: Number(rowData.tarif),
-                nationalite: rowData.nationalite,
-                lieuNaiss: rowData.lieuNaiss,
-                dateNaiss: rowData.dateNaiss,
-                province: rowData.province || "",
-                territoire: rowData.territoire || "",
-                secteur: rowData.secteur || "",
-                village: rowData.village || "",
-                adresse: rowData.adresse || "",
-                nomPere: rowData.nomPere,
-                telPere: rowData.telPere,
-                nomMere: rowData.nomMere,
-                telMere: rowData.telMere,
-                actif: rowData.actif === 1
+        let res = db.exec(`SELECT cle, valeur FROM ${tableConfigName}`);
+        if(res.length && res[0].values) {
+            res[0].values.forEach(row => {
+                const cle = row[0];
+                const valeur = row[1];
+
+                if (valeur && valeur !== "undefined") {
+                    if (cle === 'matriculeCount') matriculeCount = Number(valeur);
+                    if (cle === 'currentPin') currentPin = valeur;
+                    if (cle === 'adminPass') adminPass = valeur;
+                    if (cle === 'tauxChange') tauxChange = Number(valeur);
+                    if (cle === 'schoolData') {
+                        try {
+                            schoolData = JSON.parse(valeur);
+                            if(!schoolData.logo) schoolData.logo = "";
+                        } catch(e) { console.error("Erreur schoolData parse", e); }
+                    }
+                    // Récupération directe des structures financières et du personnel depuis le JSON importé
+                    if (cle === 'classes') { try { classes = JSON.parse(valeur); } catch(e){} }
+                    if (cle === 'staff') { try { staff = JSON.parse(valeur); } catch(e){} }
+                    if (cle === 'tousLesPaiements') { try { tousLesPaiements = JSON.parse(valeur); } catch(e){} }
+                    if (cle === 'autresMouvements') { try { autresMouvements = JSON.parse(valeur); } catch(e){} }
+                }
             });
-        });
-    }
-    // -------------------------------------------------------------
-    
-    tousLesPaiements = [];
-    res = db.exec("SELECT id, ref, nomEleve, matricule, classe, motif, montantOriginal, devise, montant, date FROM paiements");
-    if(res.length) {
-        res[0].values.forEach(r => tousLesPaiements.push({
-            id: r[0], ref: r[1], nomEleve: r[2], matricule: r[3], classe: r[4], motif: r[5], montantOriginal: r[6], devise: r[7], montant: r[8], date: r[9]
-        }));
-    }
-    
-    autresMouvements = [];
-    res = db.exec("SELECT ref, type, libelle, montant, date FROM autres_mouvements");
-    if(res.length) {
-        res[0].values.forEach(r => autresMouvements.push({ref: r[0], type: r[1], libelle: r[2], montant: r[3], date: r[4]}));
-    }
-    
-    staff = [];
-    res = db.exec("SELECT id, nom, fonction, salaire FROM staff");
-    if(res.length) {
-        res[0].values.forEach(r => {
-            let agent = { id: r[0], nom: r[1], fonction: r[2], salaire_contractuel: r[3], historiquePaiement: [] };
-            let pRes = db.exec("SELECT ref, mois, type, montant, date FROM staff_paiements WHERE staff_id = ?", [agent.id]);
-            if(pRes.length) {
-                pRes[0].values.forEach(p => agent.historiquePaiement.push({ref: p[0], mois: p[1], type: p[2], montant: p[3], date: p[4]}));
-            }
-            staff.push(agent);
-        });
+        }
+        
+        // 2. CHARGEMENT DES ÉLÈVES (Ta version sécurisée contre les décalages de colonnes)
+        eleves = [];
+        res = db.exec("SELECT * FROM eleves");
+        if(res.length && res[0].values) {
+            const columns = res[0].columns;
+            res[0].values.forEach(r => {
+                let rowData = {};
+                columns.forEach((colName, index) => {
+                    rowData[colName] = r[index];
+                });
+
+                eleves.push({
+                    matricule: rowData.matricule,
+                    nom: rowData.nom,
+                    postnom: rowData.postnom,
+                    prenom: rowData.prenom,
+                    sexe: rowData.sexe,
+                    classe: rowData.classe,
+                    tarif: Number(rowData.tarif) || 0,
+                    nationalite: rowData.nationalite,
+                    lieuNaiss: rowData.lieuNaiss,
+                    dateNaiss: rowData.dateNaiss,
+                    province: rowData.province || "",
+                    territoire: rowData.territoire || "",
+                    secteur: rowData.secteur || "",
+                    village: rowData.village || "",
+                    adresse: rowData.adresse || "",
+                    nomPere: rowData.nomPere,
+                    telPere: rowData.telPere,
+                    nomMere: rowData.nomMere,
+                    telMere: rowData.telMere,
+                    actif: rowData.actif === 1
+                });
+            });
+        }
+        
+        // 3. SÉCURITÉ DE REPLI : Si le JSON ne contenait pas les tables séparées, on interroge les tables SQL d'origine
+        if (!classes || classes.length === 0) {
+            try {
+                res = db.exec("SELECT cat, nom, tarif FROM classes");
+                if(res.length) {
+                    classes = [];
+                    res[0].values.forEach(r => classes.push({cat: r[0], nom: r[1], tarif: r[2]}));
+                }
+            } catch(e) {}
+        }
+        
+        if (!tousLesPaiements || tousLesPaiements.length === 0) {
+            try {
+                res = db.exec("SELECT id, ref, nomEleve, matricule, classe, motif, montantOriginal, devise, montant, date FROM paiements");
+                if(res.length) {
+                    tousLesPaiements = [];
+                    res[0].values.forEach(r => tousLesPaiements.push({
+                        id: r[0], ref: r[1], nomEleve: r[2], matricule: r[3], classe: r[4], motif: r[5], montantOriginal: r[6], devis: r[7], montant: r[8], date: r[9]
+                    }));
+                }
+            } catch(e) {}
+        }
+        
+        if (!autresMouvements || autresMouvements.length === 0) {
+            try {
+                res = db.exec("SELECT ref, type, libelle, montant, date FROM autres_mouvements");
+                if(res.length) {
+                    autresMouvements = [];
+                    res[0].values.forEach(r => autresMouvements.push({ref: r[0], type: r[1], libelle: r[2], montant: r[3], date: r[4]}));
+                }
+            } catch(e) {}
+        }
+        
+        if (!staff || staff.length === 0) {
+            try {
+                res = db.exec("SELECT id, nom, fonction, salaire FROM staff");
+                if(res.length) {
+                    staff = [];
+                    res[0].values.forEach(r => {
+                        let agent = { id: r[0], nom: r[1], fonction: r[2], salaire_contractuel: r[3], historiquePaiement: [] };
+                        try {
+                            let pRes = db.exec("SELECT ref, mois, type, montant, date FROM staff_paiements WHERE staff_id = ?", [agent.id]);
+                            if(pRes.length) {
+                                pRes[0].values.forEach(p => agent.historiquePaiement.push({ref: p[0], mois: p[1], type: p[2], montant: p[3], date: p[4]}));
+                            }
+                        } catch(spErr) {}
+                        staff.push(agent);
+                    });
+                }
+            } catch(e) {}
+        }
+
+        // 4. SYNCHRONISATION DE L'INTERFACE VISUELLE
+        if (schoolData && schoolData.name) {
+            const loginEl = document.getElementById('loginSchoolName');
+            if (loginEl) loginEl.innerText = schoolData.name;
+        }
+
+        updateSchoolUI();
+        remplirSelects();
+        refreshUI();
+
+        console.log("✅ Restauration totale réussie : Éleves, Finances, Staff et Coordonnées réactivés !");
+    } catch (err) {
+        console.error("❌ Erreur lors du rechargement général des données :", err);
     }
 }
+
 
 
     function migerAnciennesDonneesSiExistantes() {
@@ -802,41 +863,85 @@
         }
     }
 
-    function sauvegarderSQL() {
-        if (!db) return;
-        const data = db.export();
-        const buffer = Buffer.from(data);
-        fs.writeFileSync(DB_FILE, buffer);
-    }
-
     function sauvegarder() {
-        if (!db) return;
-        db.run("DELETE FROM configuration");
-        db.run("INSERT INTO configuration VALUES ('matriculeCount', ?), ('currentPin', ?), ('adminPass', ?), ('tauxChange', ?), ('schoolData', ?)", [matriculeCount, currentPin, adminPass, tauxChange, JSON.stringify(schoolData)]);
-        
-        db.run("DELETE FROM classes");
-        classes.forEach(c => db.run("INSERT INTO classes (cat, nom, tarif) VALUES (?, ?, ?)", [c.cat, c.nom, c.tarif]));
+    // Persistance locale immédiate en mémoire et localStorage auxiliaire
+    localStorage.setItem('schoolData', JSON.stringify(schoolData));
+    localStorage.setItem('classes', JSON.stringify(classes));
+    localStorage.setItem('matriculeCount', matriculeCount);
+    localStorage.setItem('currentPin', currentPin);
+    localStorage.setItem('adminPass', adminPass);
+    localStorage.setItem('tauxChange', tauxChange);
 
+    sauvegarderSQL();
+}
+
+function sauvegarderSQL() {
+    try {
+        // 1. Vidage de la table des élèves
         db.run("DELETE FROM eleves");
-        eleves.forEach(e => db.run("INSERT INTO eleves VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)", [e.matricule, e.nom, e.postnom, e.prenom, e.sexe, e.classe, e.tarif, e.nationalite, e.lieuNaiss, e.dateNaiss, e.nomPere, e.telPere, e.nomMere, e.telMere, e.actif ? 1 : 0]));
 
-        db.run("DELETE FROM paiements");
-        tousLesPaiements.forEach(p => db.run("INSERT INTO paiements VALUES (?,?,?,?,?,?,?,?,?,?)", [p.id, p.ref, p.nomEleve, p.matricule, p.classe, p.motif, p.montantOriginal, p.devise, p.montant, p.date]));
+        // 2. Préparation de la requête avec les 20 colonnes requises
+        const stmt = db.prepare(`INSERT INTO eleves (
+            matricule, nom, postnom, prenom, sexe, classe, tarif, nationalite, lieuNaiss, dateNaiss,
+            province, territoire, secteur, village, adresse, nomPere, telPere, nomMere, telMere, actif
+        ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`);
 
-        db.run("DELETE FROM autres_mouvements");
-        autresMouvements.forEach(m => db.run("INSERT INTO autres_mouvements (ref, type, libelle, montant, date) VALUES (?,?,?,?,?)", [m.ref, m.type, m.libelle, m.montant, m.date]));
-
-        db.run("DELETE FROM staff");
-        db.run("DELETE FROM staff_paiements");
-        staff.forEach(st => {
-            db.run("INSERT INTO staff VALUES (?,?,?,?)", [st.id, st.nom, st.fonction, st.salaire_contractuel || st.salaire]);
-            if(st.historiquePaiement) {
-                st.historiquePaiement.forEach(p => db.run("INSERT INTO staff_paiements (staff_id, ref, mois, type, montant, date) VALUES (?,?,?,?,?,?)", [st.id, p.ref, p.mois, p.type, p.montant, p.date]));
-            }
+        // 3. Insertion de chaque élève en liant rigoureusement les 20 variables
+        eleves.forEach(e => {
+            stmt.run([
+                e.matricule || "",
+                e.nom || "",
+                e.postnom || "",
+                e.prenom || "",
+                e.sexe || "",
+                e.classe || "",
+                Number(e.tarif) || 0,
+                e.nationalite || "",
+                e.lieuNaiss || "",
+                e.dateNaiss || "",
+                e.province || "",
+                e.territoire || "",
+                e.secteur || "",
+                e.village || "",
+                e.adresse || "",
+                e.nomPere || "",
+                e.telPere || "",
+                e.nomMere || "",
+                e.telMere || "",
+                e.actif ? 1 : 0
+            ]);
         });
+        
+        // Libération de la mémoire du statement des élèves
+        stmt.free();
 
-        sauvegarderSQL();
+        // 4. Sauvegarde des états de configuration sérialisés
+        const stmtConfig = db.prepare("INSERT OR REPLACE INTO config (cle, valeur) VALUES (?,?)");
+        
+        const configs = [
+            ['schoolData', JSON.stringify(schoolData)],
+            ['classes', JSON.stringify(classes)],
+            ['staff', JSON.stringify(staff)],
+            ['tousLesPaiements', JSON.stringify(tousLesPaiements)],
+            ['autresMouvements', JSON.stringify(autresMouvements)],
+            ['matriculeCount', String(matriculeCount)],
+            ['currentPin', currentPin],
+            ['adminPass', adminPass],
+            ['tauxChange', String(tauxChange)]
+        ];
+
+        configs.forEach(c => {
+            stmtConfig.run(c);
+        });
+        
+        // Libération de la mémoire du statement config
+        stmtConfig.free();
+
+        console.log("💾 Sauvegarde SQL-WASM réussie avec succès (20 colonnes).");
+    } catch (error) {
+        console.error("❌ Erreur lors de la sauvegarde SQL-WASM :", error);
     }
+}
 
     // --- LOGIQUE MULTI-UTILISATEURS SQLITE ---
     function remplirSelectConnexionUtilisateurs() {
@@ -1021,52 +1126,137 @@
     }
 
     function importerDonneesJSON() {
-        const input = document.getElementById('importJsonInput');
-        if (!input.files || !input.files[0]) return alert("Veuillez d'abord sélectionner un fichier .json");
+    const input = document.getElementById('importJsonInput');
+    if (!input.files || !input.files[0]) return alert("Veuillez d'abord sélectionner un fichier .json");
 
-        if (confirm("⚠️ ATTENTION : L'importation va écraser TOUTES vos données actuelles. Voulez-vous continuer ?")) {
-            const lecteur = new FileReader();
-            lecteur.onload = function(e) {
-                try {
-                    const d = JSON.parse(e.target.result);
-                    
-                    if (!d.schoolData || !d.classes || !d.eleves) {
-                        throw new Error("Format de fichier invalide.");
-                    }
-
-                    matriculeCount = d.matriculeCount || 1;
-                    currentPin = d.currentPin || "1234";
-                    adminPass = d.adminPass || "1234";
-                    tauxChange = d.tauxChange || 2250;
-                    schoolData = d.schoolData;
-                    classes = d.classes;
-                    eleves = d.eleves;
-                    staff = d.staff || [];
-                    tousLesPaiements = d.tousLesPaiements || [];
-                    autresMouvements = d.autresMouvements || [];
-
-                    sauvegarder();
-
-                    if(d.utilisateurs && d.utilisateurs.length) {
-                        db.run("DELETE FROM utilisateurs");
-                        d.utilisateurs.forEach(u => {
-                            db.run("INSERT INTO utilisateurs VALUES (?,?,?)", [u.username, u.password, u.role]);
-                        });
-                        sauvegarderSQL();
-                    }
-
-                    updateSchoolUI();
-                    remplirSelects();
-                    refreshUI();
-                    alert("✅ Importation JSON réussie avec succès !");
-                    location.reload(); 
-                } catch (err) {
-                    alert("❌ Erreur de lecture du fichier : " + err.message);
+    if (confirm("⚠️ ATTENTION : L'importation va écraser TOUTES vos données actuelles. Voulez-vous continuer ?")) {
+        const lecteur = new FileReader();
+        lecteur.onload = function(e) {
+            try {
+                const d = JSON.parse(e.target.result);
+                
+                if (!d.schoolData || !d.classes || !d.eleves) {
+                    throw new Error("Format de fichier invalide (les structures clés sont manquantes).");
                 }
-            };
-            lecteur.readAsText(input.files[0]);
-        }
+
+                // SÉCURITÉ FORCE : On s'assure que les tables existent avant d'exécuter les DELETE
+                db.run(`CREATE TABLE IF NOT EXISTS config (cle TEXT PRIMARY KEY, valeur TEXT);`);
+                db.run(`CREATE TABLE IF NOT EXISTS eleves (
+                    matricule TEXT PRIMARY KEY, nom TEXT, postnom TEXT, prenom TEXT, sexe TEXT, classe TEXT, tarif REAL, nationalite TEXT, lieuNaiss TEXT, dateNaiss TEXT,
+                    province TEXT, territoire TEXT, secteur TEXT, village TEXT, adresse TEXT, nomPere TEXT, telPere TEXT, nomMere TEXT, telMere TEXT, actif INTEGER
+                );`);
+
+                // 1. Restauration des variables globales en mémoire vive
+                matriculeCount = d.matriculeCount || 1;
+                currentPin = d.currentPin || "1234";
+                adminPass = d.adminPass || "1234";
+                tauxChange = d.tauxChange || 2250;
+                schoolData = d.schoolData;
+                classes = d.classes;
+                eleves = d.eleves;
+                staff = d.staff || [];
+                tousLesPaiements = d.tousLesPaiements || [];
+                autresMouvements = d.autresMouvements || [];
+
+                // 2. Persistance locale immédiate dans le localStorage
+                localStorage.setItem('schoolData', JSON.stringify(schoolData));
+                localStorage.setItem('classes', JSON.stringify(classes));
+                localStorage.setItem('matriculeCount', matriculeCount);
+                localStorage.setItem('currentPin', currentPin);
+                localStorage.setItem('adminPass', adminPass);
+                localStorage.setItem('tauxChange', tauxChange);
+
+                // 3. Vidage complet des tables SQLite pour éviter les doublons ou conflits
+                db.run("DELETE FROM eleves");
+                db.run("DELETE FROM config");
+
+                // 4. Réinsertion des élèves importés avec l'alignement strict des 20 colonnes
+                const stmtEleves = db.prepare(`INSERT INTO eleves (
+                    matricule, nom, postnom, prenom, sexe, classe, tarif, nationalite, lieuNaiss, dateNaiss,
+                    province, territoire, secteur, village, adresse, nomPere, telPere, nomMere, telMere, actif
+                ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`);
+
+                eleves.forEach(el => {
+                    stmtEleves.run([
+                        el.matricule || "",
+                        el.nom || "",
+                        el.postnom || "",
+                        el.prenom || "",
+                        el.sexe || "",
+                        el.classe || "",
+                        Number(el.tarif) || 0,
+                        el.nationalite || "",
+                        el.lieuNaiss || "",
+                        el.dateNaiss || "",
+                        el.province || "",
+                        el.territoire || "",
+                        el.secteur || "",
+                        el.village || "",
+                        el.adresse || "",
+                        el.nomPere || "",
+                        el.telPere || "",
+                        el.nomMere || "",
+                        el.telMere || "",
+                        el.actif ? 1 : 0
+                    ]);
+                });
+                stmtEleves.free();
+
+                // 5. Gestion sécurisée de la table "utilisateurs" si présente dans le JSON
+                if (d.utilisateurs && d.utilisateurs.length) {
+                    db.run("DELETE FROM utilisateurs");
+                    const stmtUsers = db.prepare("INSERT INTO utilisateurs VALUES (?,?,?)");
+                    d.utilisateurs.forEach(u => {
+                        stmtUsers.run([u.username, u.password, u.role]);
+                    });
+                    stmtUsers.free();
+                }
+
+                // 6. Sauvegarde des configurations et états financiers de l'établissement
+                const stmtConfig = db.prepare("INSERT OR REPLACE INTO config (cle, valeur) VALUES (?,?)");
+                const configs = [
+                    ['schoolData', JSON.stringify(schoolData)],
+                    ['classes', JSON.stringify(classes)],
+                    ['staff', JSON.stringify(staff)],
+                    ['tousLesPaiements', JSON.stringify(tousLesPaiements)],
+                    ['autresMouvements', JSON.stringify(autresMouvements)],
+                    ['matriculeCount', String(matriculeCount)],
+                    ['currentPin', currentPin],
+                    ['adminPass', adminPass],
+                    ['tauxChange', String(tauxChange)]
+                ];
+
+                configs.forEach(c => {
+                    stmtConfig.run(c);
+                });
+                stmtConfig.free();
+
+                // 🌟 L'ÉTAPE CRUCIALE QUI MANQUAIT : L'ÉCRITURE PHYSIQUE DU FICHIER SUR LE DISQUE 🌟
+                if (typeof fs !== 'undefined' && DB_FILE) {
+                    const data = db.export();
+                    const buffer = Buffer.from(data);
+                    fs.writeFileSync(DB_FILE, buffer);
+                    console.log("💾 Base de données synchronisée physiquement sur le disque dur !");
+                }
+
+                // 7. Synchronisation de l'interface graphique
+                updateSchoolUI();
+                remplirSelects();
+                refreshUI();
+                
+                alert("✅ Importation JSON et synchronisation SQL réussies avec succès !");
+                location.reload(); 
+                
+            } catch (err) {
+                alert("❌ Erreur de traitement ou d'intégration du fichier : " + err.message);
+                console.error(err);
+            }
+        };
+        lecteur.readAsText(input.files[0]);
     }
+}
+
+
 
     function init() {
         updateSchoolUI(); 
