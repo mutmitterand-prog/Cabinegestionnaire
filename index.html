@@ -189,18 +189,53 @@
 <input type="text" id="insFonctionMere" placeholder="Fonction de la Mère (ex: Enseignante)">
 
 <select id="insEtatCivilParents">
-    <option value="">-- État civil des parents --</option>
+    <option value=""> État civil des parents --</option>
     <option value="Marié">Mariés</option>
     <option value="Divorcé">Divorcés</option>
     <option value="Séparé">Séparés</option>
     <option value="Célibataire">Célibataires</option>
     <option value="Veuf/Veuve">Veuf / Veuve</option>
 </select>
-
-
-    
-    <!-- Tarif et Validation -->
+<!-- Tarif et Validation -->
     <input type="number" id="tarifIndiv" placeholder="Tarif Admis $">
+<!-- À coller sur la ligne 199 -->
+<div style="grid-column: span 2; margin-top: 15px; padding-top: 10px; border-top: 1px dashed #ccc;">
+    <h5 style="margin: 0 0 10px 0; color: #c0392b;">Renseignements Médicaux de Base</h5>
+    
+    <div style="margin-bottom: 10px;">
+        <label style="display:block; font-size:12px; font-weight:bold;">Groupe Sanguin :</label>
+        <select id="insGroupeSanguin" style="width:100%; padding:5px; border:1px solid #ccc; border-radius:4px;">
+            <option value="">Non spécifié</option>
+            <option value="A+">A+</option>
+            <option value="A-">A-</option>
+            <option value="B+">B+</option>
+            <option value="B-">B-</option>
+            <option value="AB+">AB+</option>
+            <option value="AB-">AB-</option>
+            <option value="O+">O+</option>
+            <option value="O-">O-</option>
+        </select>
+    </div>
+
+    <div style="margin-bottom: 10px;">
+        <label style="display:block; font-size:12px; font-weight:bold;">Allergies Connues :</label>
+        <input type="text" id="insAllergies" placeholder="Ex: Pénicilline, Arachides... ou Aucune" style="width:100%; padding:5px; border:1px solid #ccc; border-radius:4px;">
+    </div>
+
+    <div style="margin-bottom: 10px;">
+        <label style="display:block; font-size:12px; font-weight:bold;">Aptitude Physique :</label>
+        <select id="insAptitudeSport" style="width:100%; padding:5px; border:1px solid #ccc; border-radius:4px;">
+            <option value="Apte pour le sport">Apte pour le sport</option>
+            <option value="Inapte temporaire">Inapte temporaire</option>
+            <option value="Inapte permanent">Inapte permanent</option>
+        </select>
+    </div>
+
+    <div style="margin-bottom: 10px;">
+        <label style="display:block; font-size:12px; font-weight:bold;">Vision / Audition :</label>
+        <input type="text" id="insProblemeSens" placeholder="Ex: Port de lunettes, RAS..." style="width:100%; padding:5px; border:1px solid #ccc; border-radius:4px;">
+    </div>
+</div>
     <button id="btnSaveEleve" class="btn-main" onclick="gererClicBoutonEleve()" style="grid-column: span 2; padding: 12px;">ENREGISTRER L'ÉLÈVE</button>
 </div>
                 </div>
@@ -763,6 +798,17 @@
                 province TEXT, territoire TEXT, secteur TEXT, village TEXT, adresse TEXT, nomPere TEXT, telPere TEXT, nomMere TEXT, telMere TEXT, actif INTEGER
             );`);
 
+            // ========================================================
+            // 🔥 CORRECTIF CRUCIAL : Forcer l'ajout des colonnes médicales et filiation
+            // ========================================================
+            try { db.run("ALTER TABLE eleves ADD COLUMN fonctionPere TEXT;"); } catch(e){}
+            try { db.run("ALTER TABLE eleves ADD COLUMN fonctionMere TEXT;"); } catch(e){}
+            try { db.run("ALTER TABLE eleves ADD COLUMN etatCivil TEXT;"); } catch(e){}
+            try { db.run("ALTER TABLE eleves ADD COLUMN groupeSanguin TEXT;"); } catch(e){}
+            try { db.run("ALTER TABLE eleves ADD COLUMN allergies TEXT;"); } catch(e){}
+            try { db.run("ALTER TABLE eleves ADD COLUMN aptitudeSport TEXT;"); } catch(e){}
+            try { db.run("ALTER TABLE eleves ADD COLUMN problemeSens TEXT;"); } catch(e){}
+
             chargerToutesLesDonneesSQL();
         } else {
             db = new SQL.Database();
@@ -786,15 +832,13 @@
         alert("Erreur lors de l'initialisation de la base SQLite, basculement en mode secours.");
         console.error(err);
     }
-        if (document.getElementById('searchQuick')) {
-        document.getElementById('searchQuick').addEventListener('input', chargerListeRapide);
-    }
 
     // --- ENREGISTREMENT SÉCURISÉ DE L'ÉCOUTEUR DE RECHERCHE RAPIDE ---
     if (document.getElementById('searchQuick')) {
         document.getElementById('searchQuick').addEventListener('input', chargerListeRapide);
     }
 }
+
 
     function creerStructureTables() {
     db.run(`
@@ -819,8 +863,15 @@
             adresse TEXT,
             nomPere TEXT, 
             telPere TEXT, 
+            fonctionPere TEXT,
             nomMere TEXT, 
             telMere TEXT, 
+            fonctionMere TEXT,
+            etatCivil TEXT,
+            groupeSanguin TEXT,
+            allergies TEXT,
+            aptitudeSport TEXT,
+            problemeSens TEXT,
             actif INT
         );
         
@@ -830,13 +881,23 @@
         CREATE TABLE IF NOT EXISTS staff_paiements (id INTEGER PRIMARY KEY AUTOINCREMENT, staff_id TEXT, ref TEXT, mois TEXT, type TEXT, montant REAL, date TEXT);
         CREATE TABLE IF NOT EXISTS utilisateurs (username TEXT PRIMARY KEY, password TEXT, role TEXT);
     `);
+
+    // SÉCURITÉ : Si l'application avait déjà créé la table sans ces colonnes, on les force ici
+    try { db.run("ALTER TABLE eleves ADD COLUMN fonctionPere TEXT;"); } catch(e){}
+    try { db.run("ALTER TABLE eleves ADD COLUMN fonctionMere TEXT;"); } catch(e){}
+    try { db.run("ALTER TABLE eleves ADD COLUMN etatCivil TEXT;"); } catch(e){}
+    try { db.run("ALTER TABLE eleves ADD COLUMN groupeSanguin TEXT;"); } catch(e){}
+    try { db.run("ALTER TABLE eleves ADD COLUMN allergies TEXT;"); } catch(e){}
+    try { db.run("ALTER TABLE eleves ADD COLUMN aptitudeSport TEXT;"); } catch(e){}
+    try { db.run("ALTER TABLE eleves ADD COLUMN problemeSens TEXT;"); } catch(e){}
     
     db.run("INSERT INTO configuration VALUES ('matriculeCount', '1'), ('currentPin', '1234'), ('adminPass', '1234'), ('tauxChange', '2250'), ('schoolData', ?)", [JSON.stringify(schoolData)]);
     db.run("INSERT INTO classes (cat, nom, tarif) VALUES (2, '1ère Primaire', 50)");
 }
+
     function chargerToutesLesDonneesSQL() {
     try {
-        // 1. CHARGEMENT DE LA CONFIGURATION (Logo, coordonnées, taux, etc.)
+        // 1. CHARGEMENT DE LA CONFIGURATION
         let tableConfigName = "config";
         try {
             db.exec("SELECT 1 FROM config LIMIT 1");
@@ -869,7 +930,7 @@
             });
         }
         
-        // 2. CHARGEMENT DES ÉLÈVES (Corrigé pour inclure les nouvelles colonnes)
+        // 2. CHARGEMENT DES ÉLÈVES (Filiation + Médical fully intégré)
         eleves = [];
         res = db.exec("SELECT * FROM eleves");
         if(res.length && res[0].values) {
@@ -899,10 +960,15 @@
                     nomPere: rowData.nomPere,
                     telPere: rowData.telPere,
                     
-                    // --- LES 3 LIGNES AJOUTÉES ICI POUR LA LECTURE PERSISTANTE ---
                     fonctionPere: rowData.fonctionPere || "",
                     fonctionMere: rowData.fonctionMere || "",
                     etatCivil: rowData.etatCivil || "",
+                    
+                    // --- CHARGEMENT PERSISTANT DU BLOC MÉDICAL ---
+                    groupeSanguin: rowData.groupeSanguin || "",
+                    allergies: rowData.allergies || "Aucune signalée",
+                    aptitudeSport: rowData.aptitudeSport || "Apte pour le sport",
+                    problemeSens: rowData.problemeSens || "Aucun problème signalé",
                     
                     nomMere: rowData.nomMere,
                     telMere: rowData.telMere,
@@ -911,7 +977,7 @@
             });
         }
         
-        // 3. SÉCURITÉ DE REPLI : Si le JSON ne contenait pas les tables séparées
+        // 3. SÉCURITÉ DE REPLI
         if (!classes || classes.length === 0) {
             try {
                 res = db.exec("SELECT cat, nom, tarif FROM classes");
@@ -973,14 +1039,11 @@
         remplirSelects();
         refreshUI();
 
-        console.log("✅ Restauration totale réussie : Éleves, Finances, Staff et Coordonnées réactivés !");
+        console.log("✅ Restauration totale réussie avec Bloc Médical !");
     } catch (err) {
         console.error("❌ Erreur lors du rechargement général des données :", err);
     }
 }
-
-
-
 
     function migerAnciennesDonneesSiExistantes() {
         if(localStorage.getItem('t2_eleves')) {
@@ -1017,14 +1080,15 @@ function sauvegarderSQL() {
         // 1. Vidage de la table des élèves
         db.run("DELETE FROM eleves");
 
-        // 2. Préparation de la requête avec les 23 colonnes requises désormais
+        // 2. Préparation de la requête avec les 27 colonnes requises désormais (Inclus bloc médical)
         const stmt = db.prepare(`INSERT INTO eleves (
             matricule, nom, postnom, prenom, sexe, classe, tarif, nationalite, lieuNaiss, dateNaiss,
             province, territoire, secteur, village, adresse, nomPere, telPere, fonctionPere, 
-            nomMere, telMere, fonctionMere, etatCivil, actif
-        ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`);
+            nomMere, telMere, fonctionMere, etatCivil, 
+            groupeSanguin, allergies, aptitudeSport, problemeSens, actif
+        ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`);
 
-        // 3. Insertion de chaque élève en liant rigoureusement les 23 variables
+        // 3. Insertion de chaque élève en liant rigoureusement les 27 variables
         eleves.forEach(e => {
             stmt.run([
                 e.matricule || "",
@@ -1044,11 +1108,16 @@ function sauvegarderSQL() {
                 e.adresse || "",
                 e.nomPere || "",
                 e.telPere || "",
-                e.fonctionPere || "", // Ajout colonne 1
+                e.fonctionPere || "", 
                 e.nomMere || "",
                 e.telMere || "",
-                e.fonctionMere || "", // Ajout colonne 2
-                e.etatCivil || "",    // Ajout colonne 3
+                e.fonctionMere || "", 
+                e.etatCivil || "",    
+                // --- LES 4 PARAMÈTRES MÉDICAUX AJOUTÉS ICI ---
+                e.groupeSanguin || "",
+                e.allergies || "Aucune signalée",
+                e.aptitudeSport || "Apte pour le sport",
+                e.problemeSens || "Aucun problème signalé",
                 e.actif ? 1 : 0
             ]);
         });
@@ -1088,24 +1157,12 @@ function sauvegarderSQL() {
         // On l'écrit physiquement dans le fichier sur le disque dur
         fs.writeFileSync(DB_FILE, buffer);
 
-        console.log("💾 Sauvegarde SQL-WASM réussie avec succès (23 colonnes).");
+        console.log("💾 Sauvegarde SQL-WASM réussie avec succès (27 colonnes).");
     } catch (error) {
         console.error("❌ Erreur lors de la sauvegarde SQL-WASM :", error);
     }
 }
 
-    // --- LOGIQUE MULTI-UTILISATEURS SQLITE ---
-    function remplirSelectConnexionUtilisateurs() {
-        try {
-            const select = document.getElementById('userLoginSelect');
-            let res = db.exec("SELECT username FROM utilisateurs");
-            if (res.length) {
-                select.innerHTML = res[0].values.map(u => `<option value="${u[0]}">👤 ${u[0]}</option>`).join('');
-            } else {
-                select.innerHTML = `<option value="admin">👤 admin</option>`;
-            }
-        } catch(e) { console.error(e); }
-    }
 
     function checkLogin() {
         const selectedUser = document.getElementById('userLoginSelect').value;
@@ -1572,6 +1629,14 @@ function ajouterEleve() {
         fonctionMere: document.getElementById('insFonctionMere') ? document.getElementById('insFonctionMere').value.trim() : "",
         etatCivil: document.getElementById('insEtatCivilParents') ? document.getElementById('insEtatCivilParents').value : "",
         
+        // ========================================================
+        // 🔥 CAPTURE DES PARAMÈTRES MÉDICAUX DU FORMULAIRE
+        // ========================================================
+        groupeSanguin: document.getElementById('insGroupeSanguin') ? document.getElementById('insGroupeSanguin').value : "",
+        allergies: document.getElementById('insAllergies') ? document.getElementById('insAllergies').value.trim() : "Aucune signalée",
+        aptitudeSport: document.getElementById('insAptitudeSport') ? document.getElementById('insAptitudeSport').value : "Apte pour le sport",
+        problemeSens: document.getElementById('insProblemeSens') ? document.getElementById('insProblemeSens').value.trim() : "Aucun problème signalé",
+
         nomMere: document.getElementById('nomMere').value,
         telMere: document.getElementById('telMere').value,
         actif: true 
@@ -1592,28 +1657,40 @@ function ajouterEleve() {
 
         // 4. Écriture immédiate dans SQLite
         try {
+            // Sécurité dynamique de mise à niveau de la structure
             try { db.run("ALTER TABLE eleves ADD COLUMN fonctionPere TEXT"); } catch(e){}
             try { db.run("ALTER TABLE eleves ADD COLUMN fonctionMere TEXT"); } catch(e){}
             try { db.run("ALTER TABLE eleves ADD COLUMN etatCivil TEXT"); } catch(e){}
+            try { db.run("ALTER TABLE eleves ADD COLUMN groupeSanguin TEXT"); } catch(e){}
+            try { db.run("ALTER TABLE eleves ADD COLUMN allergies TEXT"); } catch(e){}
+            try { db.run("ALTER TABLE eleves ADD COLUMN aptitudeSport TEXT"); } catch(e){}
+            try { db.run("ALTER TABLE eleves ADD COLUMN problemeSens TEXT"); } catch(e){}
 
+            // On efface l'ancienne ligne pour réécriture propre
             db.run("DELETE FROM eleves WHERE matricule = ?", [mat]);
             
+            // Requête d'insertion globale enrichie avec la filiation et le médical
             db.run(`INSERT INTO eleves (
                 matricule, nom, postnom, prenom, sexe, classe, tarif, nationalite, lieuNaiss, dateNaiss,
                 province, territoire, secteur, village, adresse, nomPere, telPere, fonctionPere,
-                nomMere, telMere, fonctionMere, etatCivil, actif
-            ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,1)`, [
+                nomMere, telMere, fonctionMere, etatCivil, groupeSanguin, allergies, aptitudeSport, problemeSens, actif
+            ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,1)`, [
                 data.matricule, data.nom, data.postnom, data.prenom, data.sexe, data.classe, data.tarif,
                 data.nationalite, data.lieuNaiss, data.dateNaiss, data.province, data.territoire,
                 data.secteur, data.village, data.adresse, data.nomPere, data.telPere, data.fonctionPere,
-                data.nomMere, data.telMere, data.fonctionMere, data.etatCivil
+                data.nomMere, data.telMere, data.fonctionMere, data.etatCivil,
+                data.groupeSanguin, data.allergies, data.aptitudeSport, data.problemeSens
             ]);
         } catch(sqlErr) {
-            console.error("Erreur insertion SQL directe:", sqlErr);
+            console.error("Erreur insertion SQL directe avec module médical:", sqlErr);
         }
 
-        // 5. Sauvegarde et mise à jour de l'affichage D'ABORD
-        sauvegarder(); 
+        // ========================================================
+        // 🔥 5. DOUBLE SAUVEGARDE : MÉMOIRE + ÉCRITURE DISQUE REELLE
+        // ========================================================
+        if (typeof sauvegarder === "function") sauvegarder(); 
+        if (typeof sauvegarderSQL === "function") sauvegarderSQL(); // Enregistre le fichier .db en dur
+        
         chargerListeRapide(); 
         chargerElevesGestion(); 
         if (typeof refreshUI === "function") refreshUI();
@@ -1628,16 +1705,26 @@ function ajouterEleve() {
     }
 }
 
+
+
     function viderChampsInscr() {
     [
         "nom", "postnom", "prenom", "tarifIndiv", "lieuNaiss", "dateNaiss", 
         "province", "territoire", "secteur", "village", "adresse", 
         "nomPere", "telPere", "nomMere", "telMere",
-        // --- CORRECTION : ADAPTATION AUX ID DE SAISIE "ins" ---
-        "insFonctionPere", "insFonctionMere", "insEtatCivilParents"
+        "insFonctionPere", "insFonctionMere", "insEtatCivilParents",
+        // --- AJOUT : NETTOYAGE DU BLOC MÉDICAL ---
+        "insGroupeSanguin", "insAllergies", "insAptitudeSport", "insProblemeSens"
     ].forEach(id => {
         const el = document.getElementById(id); 
-        if(el) el.value = "";
+        if(el) {
+            // Sécurité pour l'aptitude physique qui par défaut doit revenir sur "Apte"
+            if(id === "insAptitudeSport") {
+                el.value = "Apte pour le sport";
+            } else {
+                el.value = "";
+            }
+        }
     });
     
     document.getElementById('formTitleEleve').innerText = "Fiche d'Inscription Complète";
@@ -1646,6 +1733,7 @@ function ajouterEleve() {
     btn.innerText = "ENREGISTRER L'ÉLÈVE";
     indexEleveEnCoursDeModification = null; 
 }
+
 
     function chargerListeRapide() {
     const inputSearch = document.getElementById('searchQuick');
@@ -1768,26 +1856,33 @@ function ouvrirModification(idx) {
     document.getElementById('nomMere').value = e.nomMere || '';
     document.getElementById('telMere').value = e.telMere || '';
 
-    // ========================================================
-    // 🔥 CORRECTION ICI : Ciblage des nouveaux ID du formulaire
-    // ========================================================
+    // Filiation
     document.getElementById('insFonctionPere').value = e.fonctionPere || '';
     document.getElementById('insFonctionMere').value = e.fonctionMere || '';
     document.getElementById('insEtatCivilParents').value = e.etatCivil || '';
 
+    // ========================================================
+    // 🔥 AJOUT : Chargement des données médicales existantes
+    // ========================================================
+    document.getElementById('insGroupeSanguin').value = e.groupeSanguin || '';
+    document.getElementById('insAllergies').value = e.allergies || '';
+    document.getElementById('insAptitudeSport').value = e.aptitudeSport || 'Apte pour le sport';
+    document.getElementById('insProblemeSens').value = e.problemeSens || '';
+
     const btn = document.getElementById('btnSaveEleve');
     btn.innerText = "SAUVEGARDER LES MODIFICATIONS";
 }
+
 
 // 3. LA FONCTION QUI ENREGISTRE SANS RE-APPELER ABRIRMODIFICATION
 function validerChangementsEleve(idx) {
     const e = eleves[idx];
     
     eleves[idx] = {
-        ...e,
-        nom: document.getElementById('nom').value.toUpperCase(),
-        postnom: document.getElementById('postnom').value.toUpperCase(),
-        prenom: document.getElementById('prenom').value,
+        ...e, 
+        nom: document.getElementById('nom').value.toUpperCase().trim(),
+        postnom: document.getElementById('postnom').value.toUpperCase().trim(),
+        prenom: document.getElementById('prenom').value.trim(),
         sexe: document.getElementById('sexeEleve').value,
         classe: document.getElementById('classeSelect').value,
         tarif: Number(document.getElementById('tarifIndiv').value),
@@ -1804,16 +1899,55 @@ function validerChangementsEleve(idx) {
         nomPere: document.getElementById('nomPere').value,
         telPere: document.getElementById('telPere').value,
         nomMere: document.getElementById('nomMere').value,
-        telMere: document.getElementById('telMere').value
+        telMere: document.getElementById('telMere').value,
+
+        fonctionPere: document.getElementById('insFonctionPere') ? document.getElementById('insFonctionPere').value.trim() : (e.fonctionPere || ""),
+        fonctionMere: document.getElementById('insFonctionMere') ? document.getElementById('insFonctionMere').value.trim() : (e.fonctionMere || ""),
+        etatCivil: document.getElementById('insEtatCivilParents') ? document.getElementById('insEtatCivilParents').value : (e.etatCivil || ""),
+
+        // ========================================================
+        // 🔥 PERSISTANCE ET CAPTURE DES DONNÉES MÉDICALES
+        // ========================================================
+        groupeSanguin: document.getElementById('insGroupeSanguin') ? document.getElementById('insGroupeSanguin').value : (e.groupeSanguin || ""),
+        allergies: document.getElementById('insAllergies') ? document.getElementById('insAllergies').value.trim() : (e.allergies || "Aucune signalée"),
+        aptitudeSport: document.getElementById('insAptitudeSport') ? document.getElementById('insAptitudeSport').value : (e.aptitudeSport || "Apte pour le sport"),
+        problemeSens: document.getElementById('insProblemeSens') ? document.getElementById('insProblemeSens').value.trim() : (e.problemeSens || "Aucun problème signalé")
     };
     
-    sauvegarder(); 
+    // Écriture SQLite : Requête mise à jour avec les colonnes médicales
+    try {
+        db.run(`UPDATE eleves SET 
+            nom=?, postnom=?, prenom=?, sexe=?, classe=?, tarif=?, nationalite=?, lieuNaiss=?, dateNaiss=?,
+            province=?, territoire=?, secteur=?, village=?, adresse=?, nomPere=?, telPere=?, fonctionPere=?, 
+            nomMere=?, telMere=?, fonctionMere=?, etatCivil=?,
+            groupeSanguin=?, allergies=?, aptitudeSport=?, problemeSens=? WHERE matricule=?`, [
+            eleves[idx].nom, eleves[idx].postnom, eleves[idx].prenom, eleves[idx].sexe, eleves[idx].classe, eleves[idx].tarif,
+            eleves[idx].nationalite, eleves[idx].lieuNaiss, eleves[idx].dateNaiss, eleves[idx].province, eleves[idx].territoire,
+            eleves[idx].secteur, eleves[idx].village, eleves[idx].adresse, eleves[idx].nomPere, eleves[idx].telPere, eleves[idx].fonctionPere,
+            eleves[idx].nomMere, eleves[idx].telMere, eleves[idx].fonctionMere, eleves[idx].etatCivil,
+            // Paramètres médicaux ajoutés
+            eleves[idx].groupeSanguin, eleves[idx].allergies, eleves[idx].aptitudeSport, eleves[idx].problemeSens,
+            eleves[idx].matricule
+        ]);
+    } catch(err) {
+        console.error("Erreur de mise à jour SQLite directe avec Bloc Médical", err);
+    }
+
+    // ========================================================
+    // 🔥 FORÇAGE DE L'ÉCRITURE PHYSIQUE SUR LE DISQUE DUR
+    // ========================================================
+    if (typeof sauvegarder === "function") sauvegarder(); 
+    if (typeof sauvegarderSQL === "function") sauvegarderSQL(); 
+    
     alert("Mise à jour réussie !");
     
     indexEleveEnCoursDeModification = null; 
     viderChampsInscr(); 
     chargerElevesGestion();
 }
+
+
+
     // --- PAIEMENTS & REÇUS ---
     function genererReference(prefixe) {
         return `${prefixe}-${Date.now()}-${crypto.randomUUID().slice(0,8)}`;
@@ -2262,13 +2396,16 @@ function validerChangementsEleve(idx) {
     
     function suppEleve(i) { eleves[i].actif = false; sauvegarder(); chargerElevesGestion(); refreshUI(); alert("Élève archivé."); }
     
-    function ouvrirFicheEleve(i) {
-    // SÉCURITÉ ABSOLUE : On récupère l'élève visé, mais on va chercher sa version la plus fraîche dans le tableau global via son matricule
-    const eleveVisuel = eleves[i];
-    if (!eleveVisuel) return alert("Élève introuvable dans le système.");
+    function ouvrirFicheEleve(identifiantUnique) {
+    // SÉCURITÉ ABSOLUE : On cherche par matricule (qu'on reçoive un index ou un string)
+    let e = null;
+    if (typeof identifiantUnique === "number") {
+        e = eleves[identifiantUnique];
+    } else {
+        e = eleves.find(el => el.matricule === identifiantUnique);
+    }
     
-    // On trouve le vrai élève mis à jour dans le tableau global
-    const e = eleves.find(el => el.matricule === eleveVisuel.matricule) || eleveVisuel;
+    if (!e) return alert("Élève introuvable dans le système.");
 
     // 1. Injection dynamique des Coordonnées, Année Scolaire et Logo de l'école
     document.getElementById('frEcoleNom').innerText = (schoolData.name || "ÉTABLISSEMENT SCOLAIRE").toUpperCase();
@@ -2293,14 +2430,14 @@ function validerChangementsEleve(idx) {
     document.getElementById('frNaissance').innerText = `${e.lieuNaiss || "N/A"} le ${e.dateNaiss || "N/A"}`;
     document.getElementById('frNationalite').innerText = e.nationalite || "Congolaise";
 
-    // 3. Remplissage du bloc Origine & Résidence
+    // 3. Remplissage du bloc Origine & Résidence (Correction Typo Territoire)
     document.getElementById('frProvince').innerText = e.province || "N/A";
-    document.getElementById('frTerritoire').innerText = e.territoir || e.territoire || "N/A"; 
+    document.getElementById('frTerritoire').innerText = e.territoire || "N/A"; 
     document.getElementById('frSecteur').innerText = e.secteur || "N/A";
     document.getElementById('frVillage').innerText = e.village || "N/A";
     document.getElementById('frAdresse').innerText = e.adresse || "N/A";
 
-    // 4. Remplissage du bloc Filiation (ENRICHIE ET SÉCURISÉE)
+    // 4. Remplissage du bloc Filiation (Sécurisé sans écrasement)
     document.getElementById('frPere').innerText = e.nomPere || "N/A";
     document.getElementById('frTelPere').innerText = e.telPere || "N/A";
     document.getElementById('frFonctionPere').innerText = e.fonctionPere || "Non spécifiée";
@@ -2310,7 +2447,7 @@ function validerChangementsEleve(idx) {
     document.getElementById('frEtatCivil').innerText = e.etatCivil || "Non spécifié";
 
     // 5. Remplissage du bloc Renseignements Médicaux
-    document.getElementById('frSanguin').innerText = e.groupeSanguin || "-";
+    document.getElementById('frSanguin').innerText = e.groupeSanguin || "Non spécifié";
     document.getElementById('frAllergies').innerText = e.allergies || "Aucune signalée";
     document.getElementById('frAptitude').innerText = e.aptitudeSport || "Apte pour le sport";
     document.getElementById('frSens').innerText = e.problemeSens || "Aucun problème signalé";
@@ -2613,7 +2750,7 @@ function validerChangementsEleve(idx) {
         const sexeAffichage = e.sexe === 'M' ? 'M' : 'F';
         
         // Le bouton appelle maintenant l'index numérique correspondant à ton architecture
-        const btnAction = `<button class="btn-info" style="padding:2px 6px; font-size:11px; cursor:pointer;" onclick="ouvrirFicheEleve(${indexReel})">📄 Fiche</button>`;
+        const btnAction = `<button class="btn-info" style="padding:2px 6px; font-size:11px; cursor:pointer;" onclick="ouvrirFicheEleve('${e.matricule}')">📄 Fiche</button>`;
 
         if(typeFiltre === "GlobalInsolvable") {
             const mesPaiements = tousLesPaiements.filter(p => p.matricule === e.matricule);
