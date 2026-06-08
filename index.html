@@ -180,11 +180,24 @@
     <input type="text" id="village" placeholder="Village d'origine">
     <input type="text" id="adresse" placeholder="Adresse de résidence ou domicile" style="grid-column: span 2;">
     
-    <!-- Informations des parents -->
     <input type="text" id="nomPere" placeholder="Nom du Père">
-    <input type="text" id="telPere" placeholder="Tél. Père">
-    <input type="text" id="nomMere" placeholder="Nom de la Mère">
-    <input type="text" id="telMere" placeholder="Tél. Mère">
+<input type="text" id="telPere" placeholder="Tél. Père">
+<input type="text" id="insFonctionPere" placeholder="Fonction du Père (ex: Comptable)">
+
+<input type="text" id="nomMere" placeholder="Nom de la Mère">
+<input type="text" id="telMere" placeholder="Tél. Mère">
+<input type="text" id="insFonctionMere" placeholder="Fonction de la Mère (ex: Enseignante)">
+
+<select id="insEtatCivilParents">
+    <option value="">-- État civil des parents --</option>
+    <option value="Marié">Mariés</option>
+    <option value="Divorcé">Divorcés</option>
+    <option value="Séparé">Séparés</option>
+    <option value="Célibataire">Célibataires</option>
+    <option value="Veuf/Veuve">Veuf / Veuve</option>
+</select>
+
+
     
     <!-- Tarif et Validation -->
     <input type="number" id="tarifIndiv" placeholder="Tarif Admis $">
@@ -517,18 +530,20 @@
             </div>
 
             <div class="card" style="background: #e1f5fe;">
-                <h3>🏫 Coordonnées & Logo de l'École</h3>
-                <div class="form-group" style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
-                    <input type="text" id="schoolNameInput" placeholder="Nom de l'école">
-                    <input type="text" id="schoolAddress" placeholder="Adresse complète">
-                    <input type="text" id="schoolPhone" placeholder="Téléphones">
-                    <div>
-                        <label style="font-size: 0.75rem; font-weight: bold; display: block; margin-bottom: 4px;">Logo de l'école :</label>
-                        <input type="file" id="logoInput" accept="image/*" onchange="chargerLogoBase64(this)">
-                    </div>
-                    <button class="btn-info" onclick="sauverCoords()" style="grid-column: span 2; padding: 10px;">Enregistrer les infos & le logo</button>
-                </div>
-            </div>
+    <h3>🏫 Coordonnées & Logo de l'École</h3>
+    <div class="form-group" style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+        <input type="text" id="schoolNameInput" placeholder="Nom de l'école">
+        <input type="text" id="schoolAddress" placeholder="Adresse complète">
+        <input type="text" id="schoolPhone" placeholder="Téléphones">
+        <input type="text" id="schoolAnneeScolaire" placeholder="Année Scolaire (ex: 2025-2026)">
+        <div>
+            <label style="font-size: 0.75rem; font-weight: bold; display: block; margin-bottom: 4px;">Logo de l'école :</label>
+            <input type="file" id="logoInput" accept="image/*" onchange="chargerLogoBase64(this)">
+        </div>
+        <button class="btn-info" onclick="sauverCoords()" style="grid-column: span 2; padding: 10px;">Enregistrer les infos & le logo</button>
+    </div>
+</div>
+
             
             <div class="card" style="background: #efebe9;">
                 <h3>💾 Sauvegardes & Échanges Externes (JSON)</h3>
@@ -579,6 +594,114 @@
             </div>
         </section>
     </main>
+<div id="ficheRenseignementOverlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:9999; justify-content:center; align-items:center; padding:20px;">
+    <div style="background:#fff; width:100%; max-width:800px; height:90vh; border-radius:8px; display:flex; flex-direction:column; box-shadow:0 4px 15px rgba(0,0,0,0.2); overflow:hidden;">
+        
+                                <div id="zoneImprimerFiche" style="flex:1; overflow-y:auto; padding:25px; font-family:Arial, sans-serif; color:#333;">
+            
+            <div style="position: relative; text-align: center; border-bottom: 2px solid #2c3e50; padding-bottom: 8px; margin-bottom: 15px; min-height: 80px;">
+                
+                <div id="frEcoleLogoContainer" style="position: absolute; left: 0; top: 0; width: 75px; height: 75px; display: flex; align-items: center; justify-content: center; border: 1px dashed #ccc; border-radius: 4px; overflow: hidden; background: #fafafa;">
+                    </div>
+                
+                <div style="padding-left: 85px; padding-right: 85px;">
+                    <h2 id="frEcoleNom" style="margin: 0 0 3px 0; text-transform: uppercase; font-size: 22px; color: #2c3e50; letter-spacing: 0.5px;">NOM DE L'ÉTABLISSEMENT</h2>
+                    
+                    <p style="margin: 2px 0; font-size: 13px; color: #555;">
+                        📍 <b>Adresse :</b> <span id="frEcoleAddr">...</span> 
+                        &nbsp;&nbsp;|&nbsp;&nbsp; 
+                        📞 <b>Tél :</b> <span id="frEcoleTel">...</span>
+                    </p>
+                    
+                    <p style="margin: 2px 0; font-size: 13px; color: #2980b9;">
+                        📅 <b>Année Scolaire :</b> <span id="frEcoleAnnee" style="font-weight: bold;">...</span>
+                    </p>
+                </div>
+            </div>
+
+            <div style="text-align: center; margin-bottom: 12px;">
+                <h3 style="margin:0; text-transform:uppercase; letter-spacing:1px; font-size:15px; color:#2c3e50; background:#ecf0f1; padding:5px; border-radius:4px;">Fiche de Renseignements Scolaires</h3>
+            </div>
+
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:20px;">
+                
+                <div style="border:1px solid #bdc3c7; border-radius:6px; padding:12px;">
+                    <h4 style="margin:0 0 8px 0; color:#2980b9; border-bottom:1px solid #ecf0f1; padding-bottom:4px; font-size:14px;">👤 IDENTITÉ DE L'ÉLÈVE</h4>
+                    <p style="margin:4px 0; font-size:13px;"><b>Matricule :</b> <span id="frMatricule" style="color:#e74c3c; font-weight:bold;"></span></p>
+                    <p style="margin:4px 0; font-size:13px;"><b>Nom complet :</b> <span id="frNomComplet"></span></p>
+                    <p style="margin:4px 0; font-size:13px;"><b>Classe d'étude :</b> <span id="frClasse" style="font-weight:bold;"></span></p>
+                    <p style="margin:4px 0; font-size:13px;"><b>Sexe :</b> <span id="frSexe"></span></p>
+                    <p style="margin:4px 0; font-size:13px;"><b>Lieu & Date de Naiss. :</b> <span id="frNaissance"></span></p>
+                    <p style="margin:4px 0; font-size:13px;"><b>Nationalité :</b> <span id="frNationalite"></span></p>
+                </div>
+
+                <div style="border:1px solid #bdc3c7; border-radius:6px; padding:12px;">
+                    <h4 style="margin:0 0 8px 0; color:#2980b9; border-bottom:1px solid #ecf0f1; padding-bottom:4px; font-size:14px;">📍 ORIGINE ET RÉSIDENCE</h4>
+                    <p style="margin:4px 0; font-size:13px;"><b>Province d'Origine :</b> <span id="frProvince"></span></p>
+                    <p style="margin:4px 0; font-size:13px;"><b>Territoire / Ville :</b> <span id="frTerritoire"></span></p>
+                    <p style="margin:4px 0; font-size:13px;"><b>Secteur / Collectivité :</b> <span id="frSecteur"></span></p>
+                    <p style="margin:4px 0; font-size:13px;"><b>Village :</b> <span id="frVillage"></span></p>
+                    <p style="margin:4px 0; font-size:13px;"><b>Adresse Actuelle :</b> <span id="frAdresse"></span></p>
+                </div>
+
+                <div style="border:1px solid #bdc3c7; border-radius:6px; padding:12px;">
+    <h4 style="margin:0 0 8px 0; color:#27ae60; border-bottom:1px solid #ecf0f1; padding-bottom:4px; font-size:14px;">👪 FILIATION DES PARENTS</h4>
+    
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+        <div>
+            <p style="margin:4px 0; font-size:13px;"><b>Nom du Père :</b> <span id="frPere"></span></p>
+            <p style="margin:4px 0; font-size:13px;"><b>Téléphone Père :</b> <span id="frTelPere"></span></p>
+            <p style="margin:4px 0; font-size:13px;"><b>Fonction :</b> <span id="frFonctionPere" style="color:#2980b9;"></span></p>
+        </div>
+        
+        <div>
+            <p style="margin:4px 0; font-size:13px;"><b>Nom de la Mère :</b> <span id="frMere"></span></p>
+            <p style="margin:4px 0; font-size:13px;"><b>Téléphone Mère :</b> <span id="frTelMere"></span></p>
+            <p style="margin:4px 0; font-size:13px;"><b>Fonction :</b> <span id="frFonctionMere" style="color:#2980b9;"></span></p>
+        </div>
+    </div>
+    
+    <p style="margin:8px 0 0 0; font-size:13px; border-top:1px dashed #ecf0f1; padding-top:6px;">
+        💍 <b>État civil des parents :</b> <span id="frEtatCivil" style="font-weight:bold;"></span>
+    </p>
+</div>
+
+
+                <div style="border:1px solid #e74c3c; border-radius:6px; padding:12px; background:#fff9f9;">
+                    <h4 style="margin:0 0 8px 0; color:#c0392b; border-bottom:1px solid #fbebeb; padding-bottom:4px; font-size:14px;">🏥 RENSEIGNEMENTS MÉDICAUX DE BASE</h4>
+                    <p style="margin:4px 0; font-size:13px;"><b>Groupe Sanguin :</b> <span id="frSanguin" style="font-weight:bold; color:#c0392b;">-</span></p>
+                    <p style="margin:4px 0; font-size:13px;"><b>Allergies Connues :</b> <span id="frAllergies" style="color:#d35400;">Aucune signalée</span></p>
+                    <p style="margin:4px 0; font-size:13px;"><b>Aptitude Physique :</b> <span id="frAptitude">Apte pour le sport</span></p>
+                    <p style="margin:4px 0; font-size:13px;"><b>Vision / Audition :</b> <span id="frSens">Aucun problème signalé</span></p>
+                    <p style="margin:4px 0; font-size:13px; margin-top:6px; border-top:1px dashed #f5caca; padding-top:4px;"><b>🚨 Urgence (Contact) :</b> <span id="frUrgence" style="font-weight:bold;"></span></p>
+                </div>
+
+            </div>
+
+            <div class="uniquement-impression" style="margin-top:40px; display:flex; justify-content:space-between; font-size:12px;">
+                <p>Fait à Lubumbashi, le .........................</p>
+                <p style="font-weight:bold; margin-right:50px;">Le Chef d'Établissement</p>
+            </div>
+        </div>
+
+        <div style="background:#f8f9fa; padding:12px 20px; display:flex; justify-content:flex-end; gap:10px; border-top:1px solid #eee;">
+            <button onclick="window.print()" style="background:#27ae60; color:#fff; border:none; padding:8px 16px; border-radius:4px; cursor:pointer; font-weight:bold;">🖨️ Imprimer la Fiche</button>
+            <button onclick="document.getElementById('ficheRenseignementOverlay').style.display='none'" style="background:#7f8c8d; color:#fff; border:none; padding:8px 16px; border-radius:4px; cursor:pointer;">Fermer</button>
+        </div>
+
+    </div>
+</div>
+
+<style>
+@media print {
+    body * { visibility: hidden; }
+    #ficheRenseignementOverlay, #ficheRenseignementOverlay * { visibility: visible; }
+    #ficheRenseignementOverlay { position: absolute; left: 0; top: 0; width: 100%; height: auto; background: none; padding: 0; display: block !important; }
+    #ficheRenseignementOverlay div { box-shadow: none !important; border: none !important; height: auto !important; max-width: 100% !important; }
+    .uniquement-impression { display: block !important; }
+    div[style*="background:#f8f9fa"] { display: none !important; }
+}
+</style>
 
     <script>
     // --- MOTEUR SQLITE LOCAL (NW.JS + FS) ---
@@ -658,9 +781,18 @@
         remplirSelectConnexionUtilisateurs();
         
         console.log("🚀 Base de données SQLite locale initialisée avec succès (100% Hors-ligne) !");
+        if (typeof updateSchoolUI === 'function') updateSchoolUI(); if (typeof chargerConfig === 'function') chargerConfig();
     } catch (err) {
         alert("Erreur lors de l'initialisation de la base SQLite, basculement en mode secours.");
         console.error(err);
+    }
+        if (document.getElementById('searchQuick')) {
+        document.getElementById('searchQuick').addEventListener('input', chargerListeRapide);
+    }
+
+    // --- ENREGISTREMENT SÉCURISÉ DE L'ÉCOUTEUR DE RECHERCHE RAPIDE ---
+    if (document.getElementById('searchQuick')) {
+        document.getElementById('searchQuick').addEventListener('input', chargerListeRapide);
     }
 }
 
@@ -705,7 +837,6 @@
     function chargerToutesLesDonneesSQL() {
     try {
         // 1. CHARGEMENT DE LA CONFIGURATION (Logo, coordonnées, taux, etc.)
-        // On essaie d'abord la table 'config' (utilisée par l'import), sinon on regarde 'configuration'
         let tableConfigName = "config";
         try {
             db.exec("SELECT 1 FROM config LIMIT 1");
@@ -730,7 +861,6 @@
                             if(!schoolData.logo) schoolData.logo = "";
                         } catch(e) { console.error("Erreur schoolData parse", e); }
                     }
-                    // Récupération directe des structures financières et du personnel depuis le JSON importé
                     if (cle === 'classes') { try { classes = JSON.parse(valeur); } catch(e){} }
                     if (cle === 'staff') { try { staff = JSON.parse(valeur); } catch(e){} }
                     if (cle === 'tousLesPaiements') { try { tousLesPaiements = JSON.parse(valeur); } catch(e){} }
@@ -739,7 +869,7 @@
             });
         }
         
-        // 2. CHARGEMENT DES ÉLÈVES (Ta version sécurisée contre les décalages de colonnes)
+        // 2. CHARGEMENT DES ÉLÈVES (Corrigé pour inclure les nouvelles colonnes)
         eleves = [];
         res = db.exec("SELECT * FROM eleves");
         if(res.length && res[0].values) {
@@ -768,6 +898,12 @@
                     adresse: rowData.adresse || "",
                     nomPere: rowData.nomPere,
                     telPere: rowData.telPere,
+                    
+                    // --- LES 3 LIGNES AJOUTÉES ICI POUR LA LECTURE PERSISTANTE ---
+                    fonctionPere: rowData.fonctionPere || "",
+                    fonctionMere: rowData.fonctionMere || "",
+                    etatCivil: rowData.etatCivil || "",
+                    
                     nomMere: rowData.nomMere,
                     telMere: rowData.telMere,
                     actif: rowData.actif === 1
@@ -775,7 +911,7 @@
             });
         }
         
-        // 3. SÉCURITÉ DE REPLI : Si le JSON ne contenait pas les tables séparées, on interroge les tables SQL d'origine
+        // 3. SÉCURITÉ DE REPLI : Si le JSON ne contenait pas les tables séparées
         if (!classes || classes.length === 0) {
             try {
                 res = db.exec("SELECT cat, nom, tarif FROM classes");
@@ -845,6 +981,7 @@
 
 
 
+
     function migerAnciennesDonneesSiExistantes() {
         if(localStorage.getItem('t2_eleves')) {
             try {
@@ -880,13 +1017,14 @@ function sauvegarderSQL() {
         // 1. Vidage de la table des élèves
         db.run("DELETE FROM eleves");
 
-        // 2. Préparation de la requête avec les 20 colonnes requises
+        // 2. Préparation de la requête avec les 23 colonnes requises désormais
         const stmt = db.prepare(`INSERT INTO eleves (
             matricule, nom, postnom, prenom, sexe, classe, tarif, nationalite, lieuNaiss, dateNaiss,
-            province, territoire, secteur, village, adresse, nomPere, telPere, nomMere, telMere, actif
-        ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`);
+            province, territoire, secteur, village, adresse, nomPere, telPere, fonctionPere, 
+            nomMere, telMere, fonctionMere, etatCivil, actif
+        ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`);
 
-        // 3. Insertion de chaque élève en liant rigoureusement les 20 variables
+        // 3. Insertion de chaque élève en liant rigoureusement les 23 variables
         eleves.forEach(e => {
             stmt.run([
                 e.matricule || "",
@@ -906,8 +1044,11 @@ function sauvegarderSQL() {
                 e.adresse || "",
                 e.nomPere || "",
                 e.telPere || "",
+                e.fonctionPere || "", // Ajout colonne 1
                 e.nomMere || "",
                 e.telMere || "",
+                e.fonctionMere || "", // Ajout colonne 2
+                e.etatCivil || "",    // Ajout colonne 3
                 e.actif ? 1 : 0
             ]);
         });
@@ -937,7 +1078,17 @@ function sauvegarderSQL() {
         // Libération de la mémoire du statement config
         stmtConfig.free();
 
-        console.log("💾 Sauvegarde SQL-WASM réussie avec succès (20 colonnes).");
+        // ==========================================
+        // 🔥 L'ÉTAPE CRUCIALE DE PERSISTANCE PHYSIQUE 🔥
+        // ==========================================
+        // On exporte la base de données de la RAM vers un tableau de bytes
+        const data = db.export();
+        const buffer = Buffer.from(data);
+        
+        // On l'écrit physiquement dans le fichier sur le disque dur
+        fs.writeFileSync(DB_FILE, buffer);
+
+        console.log("💾 Sauvegarde SQL-WASM réussie avec succès (23 colonnes).");
     } catch (error) {
         console.error("❌ Erreur lors de la sauvegarde SQL-WASM :", error);
     }
@@ -1320,52 +1471,170 @@ function sauvegarderSQL() {
 }
 
     // --- GESTION ÉLÈVES ---
-    function ajouterEleve() {
-    const mat = "CST" + String(matriculeCount).padStart(4, '0');
+    function determinerCycleParClasse(classe) {
+    const c = classe.toLowerCase().trim();
+    if (c.includes("mater") || c.includes("maternelle")) return "MAT";
+    if (c.includes("prim") || c.includes("primaire") || /^[1-6]\s*(e|ème)/.test(c)) return "PRI";
+    return "SEC"; // Par défaut : Secondaire / Humanités
+}
+
+function genererMatriculeParCycle(classeSelectionnee) {
+    const prefixe = determinerCycleParClasse(classeSelectionnee);
+    
+    // 1. Extraction sécurisée de la deuxième partie de l'année scolaire (ex: "2025-2026" -> "2026")
+    let anneeExtraction = String(new Date().getFullYear()); // Valeur de secours par défaut
+    if (schoolData && schoolData.annee) {
+        let anneeStr = schoolData.annee.trim();
+        if (anneeStr.includes('-')) {
+            anneeExtraction = anneeStr.split('-')[1].trim();
+        } else if (anneeStr !== "") {
+            anneeExtraction = anneeStr;
+        }
+    }
+    
+    // 2. On filtre les élèves du même cycle ET de la même année pour calculer le bon compteur chronologique
+    const elevesDuCycleEtAnnee = eleves.filter(e => {
+        if (!e.matricule) return false;
+        const parties = e.matricule.split('-'); // PRI-2026-0001
+        // On vérifie si ça commence par le bon préfixe et possède la bonne année au milieu
+        return e.matricule.startsWith(prefixe) && parties[1] === anneeExtraction;
+    });
+    
+    let dernierNumero = 0;
+    elevesDuCycleEtAnnee.forEach(e => {
+        const parties = e.matricule.split('-'); 
+        if (parties.length === 3) {
+            const num = parseInt(parties[2]);
+            if (!isNaN(num) && num > dernierNumero) {
+                dernierNumero = num;
+            }
+        }
+    });
+
+    // 3. Génération du prochain numéro incrémenté (ex: 0001, 0002...)
+    const prochainNumero = String(dernierNumero + 1).padStart(4, '0');
+    
+    // Retourne le format attendu complet : ex: PRI-2026-0001
+    return `${prefixe}-${anneeExtraction}-${prochainNumero}`;
+}
+
+
+function ajouterEleve() {
+    const classeSaisie = document.getElementById('classeSelect').value;
+    
+    let mat = "";
+    let estUneModification = false;
+
+    // 1. Vérification stricte du mode modification via l'index global
+    if (indexEleveEnCoursDeModification !== null && indexEleveEnCoursDeModification !== undefined) {
+        const eleveExistant = eleves[indexEleveEnCoursDeModification];
+        if (eleveExistant) {
+            mat = eleveExistant.matricule;
+            estUneModification = true;
+        }
+    } 
+
+    // Sécurité de secours par champ
+    if (!estUneModification) {
+        const inputMatriculeExist = document.getElementById('matricule') || document.getElementById('eleveMatriculeField');
+        mat = inputMatriculeExist ? inputMatriculeExist.value.trim() : "";
+        if (mat && mat !== "") {
+            estUneModification = true;
+        } else {
+            mat = genererMatriculeParCycle(classeSaisie);
+        }
+    }
+
+    // 2. Capture des données depuis le formulaire
     const data = {
         matricule: mat,
-        nom: document.getElementById('nom').value.toUpperCase(),
-        postnom: document.getElementById('postnom').value.toUpperCase(),
-        prenom: document.getElementById('prenom').value,
+        nom: document.getElementById('nom').value.toUpperCase().trim(),
+        postnom: document.getElementById('postnom').value.toUpperCase().trim(),
+        prenom: document.getElementById('prenom').value.trim(),
         sexe: document.getElementById('sexeEleve').value,
-        classe: document.getElementById('classeSelect').value,
+        classe: classeSaisie,
         tarif: Number(document.getElementById('tarifIndiv').value),
         nationalite: document.getElementById('nationalite').value,
         lieuNaiss: document.getElementById('lieuNaiss').value,
         dateNaiss: document.getElementById('dateNaiss').value,
         
-        // --- AJOUT DES NOUVELLES DONNÉES D'ORIGINE ET RÉSIDENCE ---
         province: document.getElementById('province').value,
         territoire: document.getElementById('territoire').value,
         secteur: document.getElementById('secteur').value,
         village: document.getElementById('village').value,
         adresse: document.getElementById('adresse').value,
-        // ---------------------------------------------------------
         
         nomPere: document.getElementById('nomPere').value,
         telPere: document.getElementById('telPere').value,
+        
+        // LECTURE DIRECTE DES CHAMPS SÉCURISÉS "ins"
+        fonctionPere: document.getElementById('insFonctionPere') ? document.getElementById('insFonctionPere').value.trim() : "",
+        fonctionMere: document.getElementById('insFonctionMere') ? document.getElementById('insFonctionMere').value.trim() : "",
+        etatCivil: document.getElementById('insEtatCivilParents') ? document.getElementById('insEtatCivilParents').value : "",
+        
         nomMere: document.getElementById('nomMere').value,
         telMere: document.getElementById('telMere').value,
         actif: true 
     };
     
     if(data.nom && data.classe) {
-        eleves.push(data); 
-        matriculeCount++;
+        // 3. Application forcée dans le tableau de la mémoire vive
+        if (estUneModification && indexEleveEnCoursDeModification !== null) {
+            eleves[indexEleveEnCoursDeModification] = data;
+        } else {
+            const indexSecours = eleves.findIndex(e => e.matricule === mat);
+            if (indexSecours !== -1) {
+                eleves[indexSecours] = data;
+            } else {
+                eleves.push(data);
+            }
+        }
+
+        // 4. Écriture immédiate dans SQLite
+        try {
+            try { db.run("ALTER TABLE eleves ADD COLUMN fonctionPere TEXT"); } catch(e){}
+            try { db.run("ALTER TABLE eleves ADD COLUMN fonctionMere TEXT"); } catch(e){}
+            try { db.run("ALTER TABLE eleves ADD COLUMN etatCivil TEXT"); } catch(e){}
+
+            db.run("DELETE FROM eleves WHERE matricule = ?", [mat]);
+            
+            db.run(`INSERT INTO eleves (
+                matricule, nom, postnom, prenom, sexe, classe, tarif, nationalite, lieuNaiss, dateNaiss,
+                province, territoire, secteur, village, adresse, nomPere, telPere, fonctionPere,
+                nomMere, telMere, fonctionMere, etatCivil, actif
+            ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,1)`, [
+                data.matricule, data.nom, data.postnom, data.prenom, data.sexe, data.classe, data.tarif,
+                data.nationalite, data.lieuNaiss, data.dateNaiss, data.province, data.territoire,
+                data.secteur, data.village, data.adresse, data.nomPere, data.telPere, data.fonctionPere,
+                data.nomMere, data.telMere, data.fonctionMere, data.etatCivil
+            ]);
+        } catch(sqlErr) {
+            console.error("Erreur insertion SQL directe:", sqlErr);
+        }
+
+        // 5. Sauvegarde et mise à jour de l'affichage D'ABORD
         sauvegarder(); 
         chargerListeRapide(); 
-        refreshUI();
-        alert("Inscrit ! Matricule : " + mat);
+        chargerElevesGestion(); 
+        if (typeof refreshUI === "function") refreshUI();
+        if (typeof genererRapportElevesOrdre === "function") genererRapportElevesOrdre();
+        
+        alert(estUneModification ? "Modifications appliquées et enregistrées avec succès !" : "Inscrit avec succès !");
+        
+        // EN DERNIER : On vide le formulaire et on remet l'index à null proprement
         viderChampsInscr();
+    } else {
+        alert("Veuillez au moins remplir le nom et sélectionner une classe.");
     }
 }
-
 
     function viderChampsInscr() {
     [
         "nom", "postnom", "prenom", "tarifIndiv", "lieuNaiss", "dateNaiss", 
         "province", "territoire", "secteur", "village", "adresse", 
-        "nomPere", "telPere", "nomMere", "telMere"
+        "nomPere", "telPere", "nomMere", "telMere",
+        // --- CORRECTION : ADAPTATION AUX ID DE SAISIE "ins" ---
+        "insFonctionPere", "insFonctionMere", "insEtatCivilParents"
     ].forEach(id => {
         const el = document.getElementById(id); 
         if(el) el.value = "";
@@ -1379,12 +1648,45 @@ function sauvegarderSQL() {
 }
 
     function chargerListeRapide() {
-        const query = document.getElementById('searchQuick').value.toLowerCase();
-        const liste = eleves.filter(e => e.actif !== false && (e.nom.toLowerCase().includes(query) || (e.matricule && e.matricule.toLowerCase().includes(query))));
-        document.getElementById('bodyQuickList').innerHTML = liste.slice().reverse().map(e => `
-            <tr><td>${e.matricule}</td><td>${e.nom} ${e.postnom || ''}</td><td>${e.classe || 'N/A'}</td><td>${e.sexe}</td></tr>
-        `).join('');
-    }
+    const inputSearch = document.getElementById('searchQuick');
+    const query = inputSearch ? inputSearch.value.toLowerCase().trim() : "";
+    const tbody = document.getElementById('bodyQuickList');
+    if (!tbody) return;
+
+    // 1. Filtrage intelligent multi-critères (Nom, Post-nom, Prénom, Matricule, Classe)
+    const listeFiltree = eleves.filter(e => {
+        if (e.actif === false) return false;
+        
+        const nomComplet = `${e.nom || ""} ${e.postnom || ""} ${e.prenom || ""}`.toLowerCase();
+        const matricule = (e.matricule || "").toLowerCase();
+        const classe = (e.classe || "").toLowerCase();
+        
+        return nomComplet.includes(query) || matricule.includes(query) || classe.includes(query);
+    });
+
+    // 2. Tri alphabétique professionnel (Nom -> Post-nom -> Prénom)
+    listeFiltree.sort((a, b) => {
+        let compNom = (a.nom || "").localeCompare(b.nom || "");
+        if (compNom !== 0) return compNom;
+        let compPostnom = (a.postnom || "").localeCompare(b.postnom || "");
+        if (compPostnom !== 0) return compPostnom;
+        return (a.prenom || "").localeCompare(b.prenom || "");
+    });
+
+    // 3. Affichage structuré dans le tableau avec le nom au format professionnel
+    tbody.innerHTML = listeFiltree.map(e => {
+        const nomAffichage = `${(e.nom || "").toUpperCase()} ${(e.postnom || "").toUpperCase()} ${e.prenom || ""}`;
+        return `
+            <tr>
+                <td><strong>${e.matricule}</strong></td>
+                <td>${nomAffichage}</td>
+                <td><span class="badge-classe">${e.classe || 'N/A'}</span></td>
+                <td style="text-align:center;">${e.sexe || ''}</td>
+            </tr>
+        `;
+    }).join('');
+}
+
 
     function declencherCalculSituationDynamique() {
         const mat = document.getElementById('searchPayeEleve').value.trim();
@@ -1410,15 +1712,28 @@ function sauvegarderSQL() {
     }
 
     function chargerElevesGestion() {
-        const search = document.getElementById('searchEleve').value.toLowerCase();
-        const liste = eleves.filter(e => e.actif !== false && (e.nom.toLowerCase().includes(search) || e.matricule.toLowerCase().includes(search)));
-        document.querySelector('#tableElevesGestion tbody').innerHTML = liste.map(e => {
-            const idx = eleves.indexOf(e);
-            return `<tr><td>${e.matricule}</td><td>${e.nom} ${e.postnom || ''}</td>
-            <td><button class="btn-info" onclick="ouvrirModification(${idx})">Modifier Fiche</button>
-            <button class="btn-del" onclick="declencherProtectionAdmin(() => suppEleve(${idx}))">X</button></td></tr>`;
-        }).join('');
-    }
+    const search = document.getElementById('searchEleve').value.toLowerCase();
+    
+    const liste = eleves.filter(e => e.actif !== false && (
+        e.nom.toLowerCase().includes(search) || 
+        e.matricule.toLowerCase().includes(search)
+    ));
+    
+    document.querySelector('#tableElevesGestion tbody').innerHTML = liste.map(e => {
+        // CORRECTION SÉCURISÉE : On trouve le vrai index dans le tableau global grâce au matricule unique
+        const idx = eleves.findIndex(eleveGlobal => eleveGlobal.matricule === e.matricule);
+        
+        return `<tr>
+            <td>${e.matricule}</td>
+            <td>${e.nom} ${e.postnom || ''}</td>
+            <td>
+                <button class="btn-info" onclick="ouvrirModification(${idx})">Modifier Fiche</button>
+                <button class="btn-del" onclick="declencherProtectionAdmin(() => suppEleve(${idx}))">X</button>
+            </td>
+        </tr>`;
+    }).join('');
+}
+
 
     // 1. UNE VARIABLE GLOBALE UNIQUE POUR SAVOIR QUI ON MODIFIE
 let indexEleveEnCoursDeModification = null;
@@ -1452,6 +1767,13 @@ function ouvrirModification(idx) {
     document.getElementById('telPere').value = e.telPere || '';
     document.getElementById('nomMere').value = e.nomMere || '';
     document.getElementById('telMere').value = e.telMere || '';
+
+    // ========================================================
+    // 🔥 CORRECTION ICI : Ciblage des nouveaux ID du formulaire
+    // ========================================================
+    document.getElementById('insFonctionPere').value = e.fonctionPere || '';
+    document.getElementById('insFonctionMere').value = e.fonctionMere || '';
+    document.getElementById('insEtatCivilParents').value = e.etatCivil || '';
 
     const btn = document.getElementById('btnSaveEleve');
     btn.innerText = "SAUVEGARDER LES MODIFICATIONS";
@@ -1940,27 +2262,102 @@ function validerChangementsEleve(idx) {
     
     function suppEleve(i) { eleves[i].actif = false; sauvegarder(); chargerElevesGestion(); refreshUI(); alert("Élève archivé."); }
     
-    function updateSchoolUI() { 
-        document.getElementById('navSchoolName').innerText = schoolData.name; 
-        document.getElementById('loginSchoolName').innerText = schoolData.name; 
-        
-        const conteneur = document.getElementById('logoContainer');
-        if (schoolData.logo) {
-            conteneur.innerHTML = `<img src="${schoolData.logo}" alt="Logo">`;
-        } else {
-            conteneur.innerHTML = schoolData.name ? schoolData.name[0].toUpperCase() : "E";
-        }
+    function ouvrirFicheEleve(i) {
+    // SÉCURITÉ ABSOLUE : On récupère l'élève visé, mais on va chercher sa version la plus fraîche dans le tableau global via son matricule
+    const eleveVisuel = eleves[i];
+    if (!eleveVisuel) return alert("Élève introuvable dans le système.");
+    
+    // On trouve le vrai élève mis à jour dans le tableau global
+    const e = eleves.find(el => el.matricule === eleveVisuel.matricule) || eleveVisuel;
+
+    // 1. Injection dynamique des Coordonnées, Année Scolaire et Logo de l'école
+    document.getElementById('frEcoleNom').innerText = (schoolData.name || "ÉTABLISSEMENT SCOLAIRE").toUpperCase();
+    document.getElementById('frEcoleAddr').innerText = schoolData.addr || "Non spécifiée";
+    document.getElementById('frEcoleTel').innerText = schoolData.tel || "Non spécifié";
+    document.getElementById('frEcoleAnnee').innerText = schoolData.annee || "Non spécifiée";
+    
+    const logoContainer = document.getElementById('frEcoleLogoContainer');
+    if (schoolData.logo) {
+        logoContainer.innerHTML = `<img src="${schoolData.logo}" style="max-width:100%; max-height:100%; object-fit:contain;">`;
+        logoContainer.style.border = "none"; 
+    } else {
+        logoContainer.innerHTML = `<span style="font-size:24px; font-weight:bold; color:#ccc;">${schoolData.name ? schoolData.name[0].toUpperCase() : "E"}</span>`;
+        logoContainer.style.border = "1px dashed #ccc";
     }
+
+    // 2. Remplissage du bloc Identité de l'élève
+    document.getElementById('frMatricule').innerText = e.matricule || "N/A";
+    document.getElementById('frNomComplet').innerText = `${(e.nom || "").toUpperCase()} ${(e.postnom || "").toUpperCase()} ${(e.prenom || "")}`;
+    document.getElementById('frClasse').innerText = e.classe || "N/A";
+    document.getElementById('frSexe').innerText = e.sexe === 'M' ? 'Masculin' : 'Féminin';
+    document.getElementById('frNaissance').innerText = `${e.lieuNaiss || "N/A"} le ${e.dateNaiss || "N/A"}`;
+    document.getElementById('frNationalite').innerText = e.nationalite || "Congolaise";
+
+    // 3. Remplissage du bloc Origine & Résidence
+    document.getElementById('frProvince').innerText = e.province || "N/A";
+    document.getElementById('frTerritoire').innerText = e.territoir || e.territoire || "N/A"; 
+    document.getElementById('frSecteur').innerText = e.secteur || "N/A";
+    document.getElementById('frVillage').innerText = e.village || "N/A";
+    document.getElementById('frAdresse').innerText = e.adresse || "N/A";
+
+    // 4. Remplissage du bloc Filiation (ENRICHIE ET SÉCURISÉE)
+    document.getElementById('frPere').innerText = e.nomPere || "N/A";
+    document.getElementById('frTelPere').innerText = e.telPere || "N/A";
+    document.getElementById('frFonctionPere').innerText = e.fonctionPere || "Non spécifiée";
+    document.getElementById('frMere').innerText = e.nomMere || "N/A";
+    document.getElementById('frTelMere').innerText = e.telMere || "N/A";
+    document.getElementById('frFonctionMere').innerText = e.fonctionMere || "Non spécifiée";
+    document.getElementById('frEtatCivil').innerText = e.etatCivil || "Non spécifié";
+
+    // 5. Remplissage du bloc Renseignements Médicaux
+    document.getElementById('frSanguin').innerText = e.groupeSanguin || "-";
+    document.getElementById('frAllergies').innerText = e.allergies || "Aucune signalée";
+    document.getElementById('frAptitude').innerText = e.aptitudeSport || "Apte pour le sport";
+    document.getElementById('frSens').innerText = e.problemeSens || "Aucun problème signalé";
+    document.getElementById('frUrgence').innerText = e.telPere || e.telMere || "Pas de contact spécifié";
+
+    // 6. Affichage de la modale à l'écran
+    document.getElementById('ficheRenseignementOverlay').style.display = 'flex';
+}
+
+    
+    function updateSchoolUI() { 
+    // 1. Mise à jour des noms de l'école sur l'interface
+    document.getElementById('navSchoolName').innerText = schoolData.name || "ÉCOLE"; 
+    document.getElementById('loginSchoolName').innerText = schoolData.name || "ÉCOLE"; 
+    
+    // 2. Pré-remplissage des champs de saisie dans le menu Configuration
+    document.getElementById('schoolNameInput').value = schoolData.name || "";
+    document.getElementById('schoolAddress').value = schoolData.addr || "";
+    document.getElementById('schoolPhone').value = schoolData.tel || "";
+    // Ligne ajoutée pour l'année scolaire :
+    document.getElementById('schoolAnneeScolaire').value = schoolData.annee || "";
+    
+    // 3. Gestion de l'affichage du logo
+    const conteneur = document.getElementById('logoContainer');
+    if (schoolData.logo) {
+        conteneur.innerHTML = `<img src="${schoolData.logo}" alt="Logo">`;
+    } else {
+        conteneur.innerHTML = schoolData.name ? schoolData.name[0].toUpperCase() : "E";
+    }
+}
+
     
     function sauverCoords() {
-        schoolData.name = document.getElementById('schoolNameInput').value;
-        schoolData.addr = document.getElementById('schoolAddress').value;
-        schoolData.tel = document.getElementById('schoolPhone').value;
-        if (base64LogoTemporaire) {
-            schoolData.logo = base64LogoTemporaire;
-        }
-        sauvegarder(); updateSchoolUI(); alert("Coordonnées et Logo mis à jour !");
+    schoolData.name = document.getElementById('schoolNameInput').value;
+    schoolData.addr = document.getElementById('schoolAddress').value;
+    schoolData.tel = document.getElementById('schoolPhone').value;
+    // Récupération de la nouvelle valeur de l'année scolaire
+    schoolData.annee = document.getElementById('schoolAnneeScolaire').value;
+    
+    if (base64LogoTemporaire) {
+        schoolData.logo = base64LogoTemporaire;
     }
+    sauvegarder(); 
+    updateSchoolUI(); 
+    alert("Coordonnées, Année Scolaire et Logo mis à jour !");
+}
+
 
     function askSecurity(s, b) { targetSection = s; targetBtn = b; document.getElementById('overlayTitle').innerText = "🔑 DIRECTION"; document.getElementById('adminPassInput').value=""; document.getElementById('financeOverlay').style.display = 'flex'; }
     function closeFinance() { document.getElementById('financeOverlay').style.display = 'none'; }
@@ -2184,37 +2581,86 @@ function validerChangementsEleve(idx) {
     
     // --- GESTION DES RAPPORTS COMPLETS ---
     function genererRapportElevesOrdre() {
-        const classeTarget = document.getElementById('repClasseSelect').value;
-        const motifTarget = document.getElementById('repMoisSelect').value;
-        const typeFiltre = document.getElementById('repTypeSelect').value;
-        const tbody = document.getElementById('bodyRapportEleves');
-        if(!classeTarget) { tbody.innerHTML = '<tr><td colspan="4">Veuillez configurer une classe.</td></tr>'; return; }
-        const elevesClasse = eleves.filter(e => e.classe === classeTarget && e.actif !== false);
-        let html = "";
-
-        elevesClasse.forEach(e => {
-            if(typeFiltre === "GlobalInsolvable") {
-                const mesPaiements = tousLesPaiements.filter(p => p.matricule === e.matricule);
-                const totalPayeAnnee = mesPaiements.reduce((sum, p) => sum + p.montant, 0);
-                const totalAttenduAnnee = (e.tarif || 0) * 10; const detteGlobale = totalAttenduAnnee - totalPayeAnnee;
-                if(detteGlobale > 0) {
-                    html += `<tr><td>${e.matricule}</td><td><b>${e.nom} ${e.postnom || ''}</b></td><td>${e.classe}</td>
-                    <td style="color:#e74c3c; font-weight:bold;">⚠️ DETTE GLOBALE : ${detteGlobale.toFixed(2)}$</td></tr>`;
-                }
-            } else {
-                const paiementsDuMotif = tousLesPaiements.filter(p => p.matricule === e.matricule && p.motif.toLowerCase().includes(motifTarget.toLowerCase()));
-                const totalPayePourCeMotif = paiementsDuMotif.reduce((s, p) => s + p.montant, 0);
-                const tarifAttendu = e.tarif || 0; const estEnOrdre = totalPayePourCeMotif >= tarifAttendu;
-                if(typeFiltre === "Ordre" && estEnOrdre) {
-                    html += `<tr><td>${e.matricule}</td><td>${e.nom} ${e.postnom || ''}</td><td>${e.classe}</td><td style="color:#27ae60; font-weight:bold;">🟢 EN ORDRE (${totalPayePourCeMotif}$)</td></tr>`;
-                } else if(typeFiltre === "Dette" && !estEnOrdre) {
-                    const resteA_Payer = tarifAttendu - totalPayePourCeMotif;
-                    html += `<tr><td>${e.matricule}</td><td>${e.nom} ${e.postnom || ''}</td><td>${e.classe}</td><td style="color:#e74c3c; font-weight:bold;">🔴 INSOLVABLE (${resteA_Payer.toFixed(2)}$)</td></tr>`;
-                }
-            }
-        });
-        tbody.innerHTML = html || `<tr><td colspan="4" style="text-align:center;">Aucun élève trouvé.</td></tr>`;
+    const classeTarget = document.getElementById('repClasseSelect').value;
+    const motifTarget = document.getElementById('repMoisSelect').value;
+    const typeFiltre = document.getElementById('repTypeSelect').value;
+    const tbody = document.getElementById('bodyRapportEleves');
+    
+    if(!classeTarget) { 
+        tbody.innerHTML = '<tr><td colspan="5">Veuillez configurer une classe.</td></tr>'; 
+        return; 
     }
+    
+    // 1. Filtrage initial des élèves actifs de la classe
+    let elevesClasse = eleves.filter(e => e.classe === classeTarget && e.actif !== false);
+    
+    // 2. TRI ALPHABÉTIQUE PROFESSIONNEL (Nom -> Post-nom -> Prénom)
+    elevesClasse.sort((a, b) => {
+        let compNom = (a.nom || "").localeCompare(b.nom || "");
+        if (compNom !== 0) return compNom;
+        let compPostnom = (a.postnom || "").localeCompare(b.postnom || "");
+        if (compPostnom !== 0) return compPostnom;
+        return (a.prenom || "").localeCompare(b.prenom || "");
+    });
+
+    let html = "";
+
+    elevesClasse.forEach(e => {
+        // CORRECTION SÉCURISÉE : On trouve l'index numérique réel de l'élève dans le tableau global
+        const indexReel = eleves.findIndex(el => el.matricule === e.matricule);
+        
+        const nomAffichage = `${(e.nom || "").toUpperCase()} ${(e.postnom || "").toUpperCase()} ${e.prenom || ""}`;
+        const sexeAffichage = e.sexe === 'M' ? 'M' : 'F';
+        
+        // Le bouton appelle maintenant l'index numérique correspondant à ton architecture
+        const btnAction = `<button class="btn-info" style="padding:2px 6px; font-size:11px; cursor:pointer;" onclick="ouvrirFicheEleve(${indexReel})">📄 Fiche</button>`;
+
+        if(typeFiltre === "GlobalInsolvable") {
+            const mesPaiements = tousLesPaiements.filter(p => p.matricule === e.matricule);
+            const totalPayeAnnee = mesPaiements.reduce((sum, p) => sum + p.montant, 0);
+            const totalAttenduAnnee = (e.tarif || 0) * 10; 
+            const detteGlobale = totalAttenduAnnee - totalPayeAnnee;
+            
+            if(detteGlobale > 0) {
+                html += `<tr>
+                    <td>${e.matricule}</td>
+                    <td><b>${nomAffichage}</b></td>
+                    <td>${sexeAffichage}</td>
+                    <td style="color:#e74c3c; font-weight:bold;">⚠️ DETTE GLOBALE : ${detteGlobale.toFixed(2)}$</td>
+                    <td>${btnAction}</td>
+                </tr>`;
+            }
+        } else {
+            const paiementsDuMotif = tousLesPaiements.filter(p => p.matricule === e.matricule && p.motif.toLowerCase().includes(motifTarget.toLowerCase()));
+            const totalPayePourCeMotif = paiementsDuMotif.reduce((s, p) => s + p.montant, 0);
+            const tarifAttendu = e.tarif || 0; 
+            const estEnOrdre = totalPayePourCeMotif >= tarifAttendu;
+            
+            if(typeFiltre === "Ordre" && estEnOrdre) {
+                html += `<tr>
+                    <td>${e.matricule}</td>
+                    <td>${nomAffichage}</td>
+                    <td>${sexeAffichage}</td>
+                    <td style="color:#27ae60; font-weight:bold;">🟢 EN ORDRE (${totalPayePourCeMotif}$)</td>
+                    <td>${btnAction}</td>
+                </tr>`;
+            } else if(typeFiltre === "Dette" && !estEnOrdre) {
+                const resteA_Payer = tarifAttendu - totalPayePourCeMotif;
+                html += `<tr>
+                    <td>${e.matricule}</td>
+                    <td>${nomAffichage}</td>
+                    <td>${sexeAffichage}</td>
+                    <td style="color:#e74c3c; font-weight:bold;">🔴 INSOLVABLE (${resteA_Payer.toFixed(2)}$)</td>
+                    <td>${btnAction}</td>
+                </tr>`;
+            }
+        }
+    });
+    
+    // Note : Le colspan passe à 5 colonnes pour accueillir la colonne Sexe et la colonne Actions
+    tbody.innerHTML = html || `<tr><td colspan="5" style="text-align:center;">Aucun élève trouvé.</td></tr>`;
+}
+
 
     function imprimerRapportEleves() {
         document.getElementById('recuContent').style.display = 'none';
@@ -2260,3 +2706,4 @@ function validerChangementsEleve(idx) {
 </script>
 </body>
 </html>
+
