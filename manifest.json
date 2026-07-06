@@ -1,6 +1,6 @@
 {
   "short_name": "CaisseFlux",
-  "name": "Gestion de Caisse Directe - Transfert & Change",
+  "name": "Gestion de Caisse - Bureau de Change, Transfert & Fonds",
   "description": "Application autonome et multi-devise pour le suivi des flux de caisse et injection de capital.",
   "icons": [
     {
